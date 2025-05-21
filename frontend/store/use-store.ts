@@ -24,6 +24,9 @@ export type Station = {
   name: string
   type: GameType
   available: boolean
+  coordinates?: { x: number; y: number } // For positioning on floor plan
+  size?: "standard" | "large"
+  status?: "available" | "reserved" | "occupied" | "maintenance"
 }
 
 export type User = {
@@ -54,7 +57,10 @@ export type Reservation = {
   matchType?: MatchType // For pool
   isCompetitive?: boolean // For pool
   status: "confirmed" | "cancelled" | "no-show" | "completed"
+  notes?: string
+  assignedByAdmin?: boolean
   createdAt: string
+  updatedAt?: string
 }
 
 export type Match = {
@@ -92,6 +98,8 @@ export type QueueEntry = {
   status: QueueStatus
   notes?: string
   notifiedAt?: string
+  assignedStationId?: string // For when a specific table is assigned
+  requiresAccount?: boolean // Whether the guest needs to create an account
   createdAt: string
   updatedAt: string
 }
@@ -184,6 +192,7 @@ interface StoreState {
   // Actions - Queue
   setShowQueueJoinModal: (show: boolean) => void
   addToQueue: (entry: Omit<QueueEntry, "id" | "position" | "status" | "createdAt" | "updatedAt">) => string
+  addGuestToQueue: (entry: Omit<QueueEntry, "id" | "position" | "status" | "createdAt" | "updatedAt" | "userId">) => string
   removeFromQueue: (id: string) => void
   updateQueueEntry: (id: string, updates: Partial<QueueEntry>) => void
   updateQueuePosition: (id: string, newPosition: number) => void
@@ -192,6 +201,8 @@ interface StoreState {
   markQueueEntryAsProcessing: (id: string) => void
   completeQueueEntry: (id: string) => void
   cancelQueueEntry: (id: string) => void
+  assignTableToQueueEntry: (queueId: string, stationId: string) => void
+  moveQueueEntryToReservation: (queueId: string, stationId: string) => string
   addQueueNotification: (message: string) => void
   markQueueNotificationAsRead: (id: string) => void
   clearQueueNotifications: () => void
@@ -213,6 +224,9 @@ interface StoreState {
   setAdminFilter: (filter: Partial<StoreState["adminFilter"]>) => void
   updateReservationStatus: (id: string, status: Reservation["status"]) => void
   deleteReservation: (id: string) => void
+  assignTableToReservation: (reservationId: string, stationId: string) => void
+  updateStationStatus: (stationId: string, status: Station["status"]) => void
+  createAdminReservation: (reservation: Omit<Reservation, "id" | "createdAt">) => string
 
   // Getters
   getAvailableStations: (gameType: GameType, date: string, timeSlotId: string) => Station[]
@@ -276,12 +290,96 @@ export const useStore = create<StoreState>()(
 
       // Mock data
       stations: [
-        { id: "1", name: "Pool Table 1", type: "pool", available: true },
-        { id: "2", name: "Pool Table 2", type: "pool", available: true },
-        { id: "3", name: "Pool Table 3", type: "pool", available: true },
-        { id: "4", name: "Pool Table 4", type: "pool", available: true },
-        { id: "5", name: "Snooker Table", type: "snooker", available: true },
-        { id: "6", name: "PS5 Console", type: "ps5", available: true },
+        {
+          id: "1",
+          name: "Pool Table 1",
+          type: "pool",
+          available: true,
+          status: "available",
+          coordinates: { x: 10, y: 10 },
+          size: "standard"
+        },
+        {
+          id: "2",
+          name: "Pool Table 2",
+          type: "pool",
+          available: true,
+          status: "available",
+          coordinates: { x: 10, y: 120 },
+          size: "standard"
+        },
+        {
+          id: "3",
+          name: "Pool Table 3",
+          type: "pool",
+          available: true,
+          status: "available",
+          coordinates: { x: 150, y: 10 },
+          size: "standard"
+        },
+        {
+          id: "4",
+          name: "Pool Table 4",
+          type: "pool",
+          available: true,
+          status: "available",
+          coordinates: { x: 150, y: 120 },
+          size: "standard"
+        },
+        {
+          id: "5",
+          name: "Pool Table 5",
+          type: "pool",
+          available: true,
+          status: "available",
+          coordinates: { x: 290, y: 10 },
+          size: "standard"
+        },
+        {
+          id: "6",
+          name: "Pool Table 6",
+          type: "pool",
+          available: true,
+          status: "available",
+          coordinates: { x: 290, y: 120 },
+          size: "standard"
+        },
+        {
+          id: "7",
+          name: "Pool Table 7",
+          type: "pool",
+          available: true,
+          status: "available",
+          coordinates: { x: 430, y: 10 },
+          size: "standard"
+        },
+        {
+          id: "8",
+          name: "Pool Table 8",
+          type: "pool",
+          available: true,
+          status: "available",
+          coordinates: { x: 430, y: 120 },
+          size: "standard"
+        },
+        {
+          id: "9",
+          name: "Snooker Table",
+          type: "snooker",
+          available: true,
+          status: "available",
+          coordinates: { x: 10, y: 230 },
+          size: "large"
+        },
+        {
+          id: "10",
+          name: "PS5 Console",
+          type: "ps5",
+          available: true,
+          status: "available",
+          coordinates: { x: 150, y: 230 },
+          size: "standard"
+        },
       ],
 
       timeSlots: [
@@ -996,7 +1094,11 @@ export const useStore = create<StoreState>()(
       updateReservationStatus: (id, status) => {
         set((state) => ({
           reservations: state.reservations.map((reservation) =>
-            reservation.id === id ? { ...reservation, status } : reservation,
+            reservation.id === id ? {
+              ...reservation,
+              status,
+              updatedAt: new Date().toISOString()
+            } : reservation,
           ),
         }))
       },
@@ -1005,6 +1107,48 @@ export const useStore = create<StoreState>()(
         set((state) => ({
           reservations: state.reservations.filter((reservation) => reservation.id !== id),
         }))
+      },
+
+      assignTableToReservation: (reservationId, stationId) => {
+        set((state) => ({
+          reservations: state.reservations.map((reservation) =>
+            reservation.id === reservationId ? {
+              ...reservation,
+              stationId,
+              assignedByAdmin: true,
+              updatedAt: new Date().toISOString()
+            } : reservation,
+          ),
+        }))
+      },
+
+      updateStationStatus: (stationId, status) => {
+        set((state) => ({
+          stations: state.stations.map((station) =>
+            station.id === stationId ? {
+              ...station,
+              status
+            } : station,
+          ),
+        }))
+      },
+
+      createAdminReservation: (reservation) => {
+        const id = Date.now().toString()
+
+        const newReservation: Reservation = {
+          ...reservation,
+          id,
+          assignedByAdmin: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }
+
+        set((state) => ({
+          reservations: [...state.reservations, newReservation],
+        }))
+
+        return id
       },
 
       // Getters
@@ -1192,6 +1336,31 @@ export const useStore = create<StoreState>()(
         return id
       },
 
+      addGuestToQueue: (entry) => {
+        const id = Date.now().toString()
+        const gameTypeQueues = get().queues.filter(q => q.gameType === entry.gameType && q.status === "waiting")
+        const position = gameTypeQueues.length + 1
+
+        const newEntry: QueueEntry = {
+          ...entry,
+          id,
+          position,
+          status: "waiting",
+          requiresAccount: false, // Guest doesn't need an account
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }
+
+        set((state) => ({
+          queues: [...state.queues, newEntry],
+        }))
+
+        // Add notification for the admin
+        get().addQueueNotification(`Guest ${entry.name} has been added to the ${entry.gameType} queue at position ${position}.`)
+
+        return id
+      },
+
       removeFromQueue: (id) => {
         const queueEntry = get().queues.find(q => q.id === id)
         if (!queueEntry) return
@@ -1367,6 +1536,56 @@ export const useStore = create<StoreState>()(
         gameTypeQueues.forEach(entry => {
           get().updateQueuePosition(entry.id, entry.position - 1)
         })
+      },
+
+      assignTableToQueueEntry: (queueId, stationId) => {
+        const queueEntry = get().queues.find(q => q.id === queueId)
+        if (!queueEntry || queueEntry.status === "completed" || queueEntry.status === "cancelled") return
+
+        set((state) => ({
+          queues: state.queues.map(q =>
+            q.id === queueId
+              ? {
+                  ...q,
+                  assignedStationId: stationId,
+                  updatedAt: new Date().toISOString()
+                }
+              : q
+          ),
+        }))
+
+        // Update station status
+        get().updateStationStatus(stationId, "reserved")
+
+        // Add notification
+        get().addQueueNotification(`Table ${get().stations.find(s => s.id === stationId)?.name} has been assigned to ${queueEntry.name}.`)
+      },
+
+      moveQueueEntryToReservation: (queueId, stationId) => {
+        const queueEntry = get().queues.find(q => q.id === queueId)
+        if (!queueEntry || queueEntry.status === "completed" || queueEntry.status === "cancelled") return ""
+
+        // Create a new reservation from the queue entry
+        const reservationId = get().createAdminReservation({
+          stationId,
+          date: queueEntry.date,
+          timeSlot: queueEntry.preferredTimeSlot || get().timeSlots[0], // Use preferred time slot or default to first available
+          gameType: queueEntry.gameType,
+          playerCount: queueEntry.playerCount,
+          name: queueEntry.name,
+          email: queueEntry.email,
+          phone: queueEntry.phone,
+          notes: queueEntry.notes,
+          status: "confirmed",
+        })
+
+        // Mark the queue entry as completed
+        get().completeQueueEntry(queueId)
+
+        // Update station status
+        get().updateStationStatus(stationId, "occupied")
+
+        return reservationId
       },
 
       addQueueNotification: (message) => {

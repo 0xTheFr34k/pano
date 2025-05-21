@@ -198,29 +198,42 @@ export default function AdminPage() {
         <p className="text-center text-gray-600 mb-8">Manage reservations, users, and club operations</p>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-5 w-full max-w-md mx-auto mb-8">
-            <TabsTrigger value="dashboard" className="flex items-center gap-2">
-              <LayoutDashboard className="h-4 w-4" />
-              <span>Dashboard</span>
-            </TabsTrigger>
-            <TabsTrigger value="reservations" className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4" />
-              <span>Reservations</span>
-            </TabsTrigger>
-            <TabsTrigger value="queues" className="flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              <span>Queues</span>
-            </TabsTrigger>
-            <TabsTrigger value="members" className="flex items-center gap-2">
-              <UserCog className="h-4 w-4" />
-              <span>Members</span>
-            </TabsTrigger>
-            <TabsTrigger value="pending" className="flex items-center gap-2">
-              <UserPlus className="h-4 w-4" />
-              <span>Pending</span>
-              {pendingUsers.length > 0 && <Badge className="ml-1 bg-amber-500">{pendingUsers.length}</Badge>}
-            </TabsTrigger>
-          </TabsList>
+          <div className="mb-8">
+            <TabsList className="grid grid-cols-5 w-full max-w-md mx-auto mb-4">
+              <TabsTrigger value="dashboard" className="flex items-center gap-2">
+                <LayoutDashboard className="h-4 w-4" />
+                <span>Dashboard</span>
+              </TabsTrigger>
+              <TabsTrigger value="reservations" className="flex items-center gap-2">
+                <CalendarDays className="h-4 w-4" />
+                <span>Reservations</span>
+              </TabsTrigger>
+              <TabsTrigger value="queues" className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                <span>Queues</span>
+              </TabsTrigger>
+              <TabsTrigger value="members" className="flex items-center gap-2">
+                <UserCog className="h-4 w-4" />
+                <span>Members</span>
+              </TabsTrigger>
+              <TabsTrigger value="pending" className="flex items-center gap-2">
+                <UserPlus className="h-4 w-4" />
+                <span>Pending</span>
+                {pendingUsers.length > 0 && <Badge className="ml-1 bg-amber-500">{pendingUsers.length}</Badge>}
+              </TabsTrigger>
+            </TabsList>
+
+            <div className="flex justify-center gap-4">
+              <Button variant="outline" onClick={() => router.push("/admin/tables")}>
+                <BilliardBall className="h-4 w-4 mr-2" />
+                Table Management
+              </Button>
+              <Button variant="outline" onClick={() => router.push("/admin/queue")}>
+                <Clock className="h-4 w-4 mr-2" />
+                Queue Management
+              </Button>
+            </div>
+          </div>
 
           {/* Dashboard Tab */}
           <TabsContent value="dashboard">
