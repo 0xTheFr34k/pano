@@ -61,15 +61,15 @@ export default function RegisterPage() {
   useEffect(() => {
     if (currentUser) {
       if (currentUser.isAdmin) {
-        // Redirect admin users to the admin dashboard
-        router.push("/admin")
+        // Redirect admin users to the dashboard
+        router.push("/dashboard")
       } else {
         // If the user was trying to access a specific protected feature, redirect them there
-        // Otherwise, redirect regular users to the find-match page
+        // Otherwise, redirect regular users to the reserve page
         if (redirectPath !== "/" && redirectPath !== "/register") {
           router.push(redirectPath)
         } else {
-          router.push("/find-match")
+          router.push("/reserve")
         }
       }
     }
@@ -111,15 +111,15 @@ export default function RegisterPage() {
       const loggedInUser = useStore.getState().currentUser
 
       if (loggedInUser?.isAdmin) {
-        // Redirect admin users to the admin dashboard
-        router.push("/admin")
+        // Redirect admin users to the dashboard
+        router.push("/dashboard")
       } else {
         // If the user was trying to access a specific protected feature, redirect them there
-        // Otherwise, redirect regular users to the find-match page
+        // Otherwise, redirect regular users to the reserve page
         if (redirectPath !== "/" && redirectPath !== "/register") {
           router.push(redirectPath)
         } else {
-          router.push("/find-match")
+          router.push("/reserve")
         }
       }
     } else {

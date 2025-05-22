@@ -5,7 +5,7 @@ import { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { useStore } from "@/store/use-store"
 import { Button } from "@/components/ui/button"
-import { Menu, X, User, LogIn, LogOut, ShieldCheck, LayoutDashboard, AlertCircle } from "lucide-react"
+import { Menu, X, User, LogIn, LogOut, ShieldCheck, LayoutDashboard, AlertCircle, Calendar } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -105,17 +105,16 @@ export default function Navbar() {
               {isAuthenticated && (
                 <>
                   {getProtectedLink("/reserve", "Book a Game")}
-                  {getProtectedLink("/find-match", "Find a Match")}
-                  {getProtectedLink("/availability", "Availability")}
+                  {getProtectedLink("/my-reservations", "My Reservations")}
                 </>
               )}
 
               {isAdmin && (
                 <Link
-                  href="/admin"
-                  className={`text-white hover:text-amber-400 transition-colors ${pathname === "/admin" ? "text-amber-400" : ""}`}
+                  href="/dashboard"
+                  className={`text-white hover:text-amber-400 transition-colors ${pathname === "/dashboard" ? "text-amber-400" : ""}`}
                 >
-                  Admin
+                  Dashboard
                 </Link>
               )}
 
@@ -147,11 +146,17 @@ export default function Navbar() {
                         <span>Profile</span>
                       </Link>
                     </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/my-reservations" className="cursor-pointer">
+                        <Calendar className="mr-2 h-4 w-4" />
+                        <span>My Reservations</span>
+                      </Link>
+                    </DropdownMenuItem>
                     {isAdmin && (
                       <DropdownMenuItem asChild>
-                        <Link href="/admin" className="cursor-pointer">
+                        <Link href="/dashboard" className="cursor-pointer">
                           <LayoutDashboard className="mr-2 h-4 w-4" />
-                          <span>Admin Dashboard</span>
+                          <span>Dashboard</span>
                         </Link>
                       </DropdownMenuItem>
                     )}
@@ -189,18 +194,17 @@ export default function Navbar() {
               {isAuthenticated && (
                 <>
                   {getProtectedMobileLink("/reserve", "Book a Game")}
-                  {getProtectedMobileLink("/find-match", "Find a Match")}
-                  {getProtectedMobileLink("/availability", "Availability")}
+                  {getProtectedMobileLink("/my-reservations", "My Reservations")}
                 </>
               )}
 
               {isAdmin && (
                 <Link
-                  href="/admin"
-                  className={`text-white hover:text-amber-400 transition-colors py-2 ${pathname === "/admin" ? "text-amber-400" : ""}`}
+                  href="/dashboard"
+                  className={`text-white hover:text-amber-400 transition-colors py-2 ${pathname === "/dashboard" ? "text-amber-400" : ""}`}
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  Admin Dashboard
+                  Dashboard
                 </Link>
               )}
 

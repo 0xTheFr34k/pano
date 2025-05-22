@@ -2,15 +2,15 @@
 
 import { useRouter } from "next/navigation"
 import { useStore } from "@/store/use-store"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import QueueManagement from "@/components/admin/queue-management"
 import ProtectedRoute from "@/components/protected-route"
 
-export default function AdminQueuePage() {
+export default function DashboardQueuePage() {
   const router = useRouter()
   const { getQueueStatistics } = useStore()
-  
+
   const stats = getQueueStatistics()
 
   return (
@@ -18,7 +18,7 @@ export default function AdminQueuePage() {
       <div className="container mx-auto py-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Queue Management</h1>
-          <Button onClick={() => router.push("/admin")}>Back to Dashboard</Button>
+          <Button onClick={() => router.push("/dashboard")}>Back to Dashboard</Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">

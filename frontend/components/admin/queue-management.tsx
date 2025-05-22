@@ -47,7 +47,7 @@ export default function QueueManagement() {
   const [guestPhone, setGuestPhone] = useState("")
   const [guestGameType, setGuestGameType] = useState<GameType>("pool")
   const [guestPlayerCount, setGuestPlayerCount] = useState(2)
-  const [guestTimeSlotId, setGuestTimeSlotId] = useState("")
+  const [guestTimeSlotId, setGuestTimeSlotId] = useState("none")
   const [guestPriority, setGuestPriority] = useState<"normal" | "high" | "vip">("normal")
   const [guestNotes, setGuestNotes] = useState("")
 
@@ -83,7 +83,7 @@ export default function QueueManagement() {
     }
 
     const today = new Date().toISOString().split("T")[0]
-    const preferredTimeSlot = guestTimeSlotId
+    const preferredTimeSlot = (guestTimeSlotId && guestTimeSlotId !== "none")
       ? timeSlots.find(slot => slot.id === guestTimeSlotId)
       : undefined
 
@@ -108,7 +108,7 @@ export default function QueueManagement() {
     setGuestPhone("")
     setGuestGameType("pool")
     setGuestPlayerCount(2)
-    setGuestTimeSlotId("")
+    setGuestTimeSlotId("none")
     setGuestPriority("normal")
     setGuestNotes("")
 
@@ -398,7 +398,7 @@ export default function QueueManagement() {
                     <SelectValue placeholder="Select time slot" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No preference</SelectItem>
+                    <SelectItem value="none">No preference</SelectItem>
                     {timeSlots.map((slot) => (
                       <SelectItem key={slot.id} value={slot.id}>
                         {slot.start} - {slot.end}

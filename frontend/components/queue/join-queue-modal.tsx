@@ -59,7 +59,7 @@ export default function JoinQueueModal() {
 
     if (queueId) {
       setSuccess(true)
-      
+
       // Redirect to home after success
       setTimeout(() => {
         setShowQueueJoinModal(false)
@@ -127,17 +127,21 @@ export default function JoinQueueModal() {
           <div className="space-y-2">
             <Label htmlFor="preferred-time">Preferred Time Slot (Optional)</Label>
             <Select
-              value={preferredTimeSlot?.id || ""}
+              value={preferredTimeSlot?.id || "none"}
               onValueChange={(value) => {
-                const timeSlot = timeSlots.find((slot) => slot.id === value)
-                setPreferredTimeSlot(timeSlot || null)
+                if (value === "none") {
+                  setPreferredTimeSlot(null)
+                } else {
+                  const timeSlot = timeSlots.find((slot) => slot.id === value)
+                  setPreferredTimeSlot(timeSlot || null)
+                }
               }}
             >
               <SelectTrigger id="preferred-time">
                 <SelectValue placeholder="Select preferred time" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No preference</SelectItem>
+                <SelectItem value="none">No preference</SelectItem>
                 {timeSlots.map((slot) => (
                   <SelectItem key={slot.id} value={slot.id}>
                     {slot.start} - {slot.end}
@@ -188,6 +192,15 @@ export default function JoinQueueModal() {
                 </div>
               </div>
             </>
+          )}
+
+          {currentUser && (
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h3 className="font-medium mb-2">Your Information</h3>
+              <p className="font-medium">{currentUser.name}</p>
+              <p className="text-sm text-gray-600">{currentUser.email}</p>
+              <p className="text-sm text-gray-600">{currentUser.phone}</p>
+            </div>
           )}
         </div>
 

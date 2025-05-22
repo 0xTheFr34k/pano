@@ -12,6 +12,9 @@ export type UserStatus = "pending" | "approved" | "rejected"
 export type MatchStatus = "open" | "in_progress" | "completed" | "cancelled"
 export type QueueStatus = "waiting" | "notified" | "processing" | "completed" | "cancelled"
 export type QueuePriority = "normal" | "high" | "vip"
+export type PoolTableMode = "queue" | "match"
+export type MatchCompletionMethod = "admin" | "player" | "system"
+export type PS5Duration = 10 | 30 | 60 | 90 | 120
 
 export type TimeSlot = {
   id: string
@@ -27,6 +30,10 @@ export type Station = {
   coordinates?: { x: number; y: number } // For positioning on floor plan
   size?: "standard" | "large"
   status?: "available" | "reserved" | "occupied" | "maintenance"
+  currentPlayers?: string[] // IDs of players currently using the station
+  currentWinner?: string // ID of the current winner (for snooker)
+  winStreak?: number // Current win streak (for snooker and pool)
+  isFriendlyMatch?: boolean // Whether this is a friendly match (for snooker)
 }
 
 export type User = {
@@ -40,6 +47,19 @@ export type User = {
   isAdmin: boolean
   status: UserStatus
   createdAt: string
+  // Win streak tracking
+  snookerWinStreak: number
+  snookerMaxWinStreak: number
+  poolWinStreak: number
+  poolMaxWinStreak: number
+  achievements: {
+    snookerStreak5: boolean
+    snookerStreak10: boolean
+    snookerStreak20: boolean
+    poolStreak5: boolean
+    poolStreak10: boolean
+    poolStreak20: boolean
+  }
 }
 
 export type Reservation = {
@@ -63,24 +83,7 @@ export type Reservation = {
   updatedAt?: string
 }
 
-export type Match = {
-  id: string
-  creatorId: string
-  creatorName: string
-  gameType: GameType
-  skillLevel: SkillLevel
-  date: string
-  timeSlot: TimeSlot
-  stationId: string
-  playerCount: number
-  maxPlayers: number
-  players: string[] // Array of user IDs who have joined
-  matchType?: MatchType // For pool
-  isCompetitive?: boolean // For pool
-  duration?: number // For PS5 and snooker
-  status: MatchStatus
-  createdAt: string
-}
+
 
 export type QueueEntry = {
   id: string
@@ -102,18 +105,16 @@ export type QueueEntry = {
   requiresAccount?: boolean // Whether the guest needs to create an account
   createdAt: string
   updatedAt: string
+  // For snooker queue system
+  isCurrentlyPlaying?: boolean
+  isWinner?: boolean
+  consecutiveWins?: number
+  lastOpponentId?: string
+  // For pool queue system
+  preferredTableId?: string
 }
 
-export type WaitingPlayer = {
-  id: string
-  userId?: string
-  name: string
-  gameType: GameType
-  skillLevel: SkillLevel
-  timeRange: "now" | "30min" | "60min" | "today"
-  matchId?: string // Reference to a match if the player has joined one
-  createdAt: string
-}
+
 
 // Define store state type
 interface StoreState {
@@ -128,9 +129,7 @@ interface StoreState {
   duration: number // For PS5 and snooker (in minutes)
   matchType: MatchType // For pool
   isCompetitive: boolean // For pool
-  skillLevel: SkillLevel // For waiting players
-  timeRange: "now" | "30min" | "60min" | "today" // For waiting players
-  isWaitingForPlayer: boolean // For find match
+  skillLevel: SkillLevel
 
   // Registration form state
   avatar: string
@@ -147,18 +146,35 @@ interface StoreState {
     status: "all" | "confirmed" | "cancelled" | "no-show" | "completed"
   }
 
+  // Game station management state
+  poolTableMode: PoolTableMode // Current mode for pool tables
+  matchLogs: {
+    id: string
+    matchId: string
+    stationId: string
+    gameType: GameType
+    completedAt: string
+    completionMethod: MatchCompletionMethod
+    matchDuration: number
+    winnerId?: string
+    loserId?: string
+    isFriendlyMatch: boolean
+  }[]
+
   // Mock data
   stations: Station[]
   timeSlots: TimeSlot[]
   reservations: Reservation[]
-  waitingPlayers: WaitingPlayer[]
   users: User[]
-  matches: Match[]
   queues: QueueEntry[]
 
   // Queue state
   showQueueJoinModal: boolean
   queueNotifications: { id: string; message: string; read: boolean }[]
+
+  // Reservation success state
+  showSuccessModal: boolean
+  lastReservation: Reservation | null
 
   // Actions - Reservation
   setSelectedGameType: (gameType: GameType | null) => void
@@ -172,25 +188,25 @@ interface StoreState {
   setMatchType: (matchType: MatchType) => void
   setIsCompetitive: (isCompetitive: boolean) => void
   setSkillLevel: (skillLevel: SkillLevel) => void
-  setTimeRange: (timeRange: "now" | "30min" | "60min" | "today") => void
-  setIsWaitingForPlayer: (isWaiting: boolean) => void
   resetForm: () => void
   createReservation: () => void
 
-  // Actions - Waiting Players
-  addWaitingPlayer: () => void
-  removeWaitingPlayer: (id: string) => void
 
-  // Actions - Matches
-  createMatch: () => string | null
-  joinMatch: (matchId: string) => boolean
-  leaveMatch: (matchId: string, userId: string) => void
-  getMatchById: (matchId: string) => Match | undefined
-  getMatchesByGameType: (gameType: GameType | null) => Match[]
-  updateMatchStatus: (matchId: string, status: MatchStatus) => void
+
+  // Actions - Game Station Management
+  setPoolTableMode: (mode: PoolTableMode) => void
+  getPoolTableMode: () => PoolTableMode
+  markMatchAsComplete: (stationId: string, winnerId?: string, method?: MatchCompletionMethod) => void
+  startFriendlyMatch: (stationId: string, playerIds: string[]) => void
+  endFriendlyMatch: (stationId: string) => void
+  updateWinStreak: (userId: string, gameType: GameType, isWin: boolean) => void
+  getNextPlayerInQueue: (gameType: GameType) => QueueEntry | null
+  pairPlayersForMatch: (gameType: GameType, stationId: string) => void
+  handleNoShow: (reservationId: string) => void
 
   // Actions - Queue
   setShowQueueJoinModal: (show: boolean) => void
+  setShowSuccessModal: (show: boolean) => void
   addToQueue: (entry: Omit<QueueEntry, "id" | "position" | "status" | "createdAt" | "updatedAt">) => string
   addGuestToQueue: (entry: Omit<QueueEntry, "id" | "position" | "status" | "createdAt" | "updatedAt" | "userId">) => string
   removeFromQueue: (id: string) => void
@@ -231,12 +247,9 @@ interface StoreState {
   // Getters
   getAvailableStations: (gameType: GameType, date: string, timeSlotId: string) => Station[]
   getReservationsForDate: (date: string) => Reservation[]
-  getWaitingPlayersByGameType: (gameType: GameType | null) => WaitingPlayer[]
   getMaxMatches: (matchType: MatchType) => number
   getFilteredReservations: () => Reservation[]
   getUserReservations: (userId: string) => Reservation[]
-  getOpenMatches: () => Match[]
-  getMatchesByUser: (userId: string) => Match[]
 
   // Queue Getters
   getQueuesByGameType: (gameType: GameType | null) => QueueEntry[]
@@ -252,6 +265,17 @@ interface StoreState {
   }
   getUnreadNotificationsCount: () => number
   shouldShowQueueOption: (gameType: GameType, date: string, timeSlotId: string) => boolean
+
+  // Game Station Management Getters
+  getCurrentPlayersOnStation: (stationId: string) => string[]
+  getCurrentWinnerOnStation: (stationId: string) => string | undefined
+  getWinStreakForStation: (stationId: string) => number
+  getWinStreakForUser: (userId: string, gameType: GameType) => number
+  getMaxWinStreakForUser: (userId: string, gameType: GameType) => number
+  getUserAchievements: (userId: string) => User["achievements"]
+  getMatchLogs: (stationId?: string, gameType?: GameType) => StoreState["matchLogs"]
+  getEstimatedWaitTimeForGameType: (gameType: GameType) => number
+  getNextQueuedPlayers: (gameType: GameType, count: number) => QueueEntry[]
 }
 
 // Create the store
@@ -269,9 +293,7 @@ export const useStore = create<StoreState>()(
       duration: 30, // Default 30 minutes for PS5
       matchType: "first-to-3", // Default for pool
       isCompetitive: false, // Default for pool
-      skillLevel: "casual", // Default for waiting players
-      timeRange: "now", // Default for waiting players
-      isWaitingForPlayer: false, // Default for find match
+      skillLevel: "casual",
 
       // Registration form state
       avatar: "",
@@ -288,6 +310,10 @@ export const useStore = create<StoreState>()(
         status: "all",
       },
 
+      // Game station management state
+      poolTableMode: "queue", // Default mode for pool tables
+      matchLogs: [],
+
       // Mock data
       stations: [
         {
@@ -297,7 +323,9 @@ export const useStore = create<StoreState>()(
           available: true,
           status: "available",
           coordinates: { x: 10, y: 10 },
-          size: "standard"
+          size: "standard",
+          currentPlayers: [],
+          winStreak: 0
         },
         {
           id: "2",
@@ -306,7 +334,9 @@ export const useStore = create<StoreState>()(
           available: true,
           status: "available",
           coordinates: { x: 10, y: 120 },
-          size: "standard"
+          size: "standard",
+          currentPlayers: [],
+          winStreak: 0
         },
         {
           id: "3",
@@ -315,7 +345,9 @@ export const useStore = create<StoreState>()(
           available: true,
           status: "available",
           coordinates: { x: 150, y: 10 },
-          size: "standard"
+          size: "standard",
+          currentPlayers: [],
+          winStreak: 0
         },
         {
           id: "4",
@@ -324,7 +356,9 @@ export const useStore = create<StoreState>()(
           available: true,
           status: "available",
           coordinates: { x: 150, y: 120 },
-          size: "standard"
+          size: "standard",
+          currentPlayers: [],
+          winStreak: 0
         },
         {
           id: "5",
@@ -369,7 +403,11 @@ export const useStore = create<StoreState>()(
           available: true,
           status: "available",
           coordinates: { x: 10, y: 230 },
-          size: "large"
+          size: "large",
+          currentPlayers: [],
+          currentWinner: undefined,
+          winStreak: 0,
+          isFriendlyMatch: false
         },
         {
           id: "10",
@@ -378,7 +416,8 @@ export const useStore = create<StoreState>()(
           available: true,
           status: "available",
           coordinates: { x: 150, y: 230 },
-          size: "standard"
+          size: "standard",
+          currentPlayers: []
         },
       ],
 
@@ -406,6 +445,18 @@ export const useStore = create<StoreState>()(
           isAdmin: true,
           status: "approved",
           createdAt: new Date().toISOString(),
+          snookerWinStreak: 0,
+          snookerMaxWinStreak: 0,
+          poolWinStreak: 0,
+          poolMaxWinStreak: 0,
+          achievements: {
+            snookerStreak5: false,
+            snookerStreak10: false,
+            snookerStreak20: false,
+            poolStreak5: false,
+            poolStreak10: false,
+            poolStreak20: false,
+          },
         },
         {
           id: "2",
@@ -418,6 +469,18 @@ export const useStore = create<StoreState>()(
           isAdmin: false,
           status: "approved",
           createdAt: new Date().toISOString(),
+          snookerWinStreak: 0,
+          snookerMaxWinStreak: 0,
+          poolWinStreak: 3,
+          poolMaxWinStreak: 7,
+          achievements: {
+            snookerStreak5: false,
+            snookerStreak10: false,
+            snookerStreak20: false,
+            poolStreak5: true,
+            poolStreak10: false,
+            poolStreak20: false,
+          },
         },
         {
           id: "3",
@@ -429,6 +492,18 @@ export const useStore = create<StoreState>()(
           isAdmin: false,
           status: "approved",
           createdAt: new Date().toISOString(),
+          snookerWinStreak: 2,
+          snookerMaxWinStreak: 5,
+          poolWinStreak: 0,
+          poolMaxWinStreak: 2,
+          achievements: {
+            snookerStreak5: true,
+            snookerStreak10: false,
+            snookerStreak20: false,
+            poolStreak5: false,
+            poolStreak10: false,
+            poolStreak20: false,
+          },
         },
         {
           id: "4",
@@ -441,6 +516,18 @@ export const useStore = create<StoreState>()(
           isAdmin: false,
           status: "approved",
           createdAt: new Date().toISOString(),
+          snookerWinStreak: 0,
+          snookerMaxWinStreak: 0,
+          poolWinStreak: 0,
+          poolMaxWinStreak: 0,
+          achievements: {
+            snookerStreak5: false,
+            snookerStreak10: false,
+            snookerStreak20: false,
+            poolStreak5: false,
+            poolStreak10: false,
+            poolStreak20: false,
+          },
         },
         {
           id: "5",
@@ -452,6 +539,18 @@ export const useStore = create<StoreState>()(
           isAdmin: false,
           status: "pending",
           createdAt: new Date().toISOString(),
+          snookerWinStreak: 0,
+          snookerMaxWinStreak: 0,
+          poolWinStreak: 0,
+          poolMaxWinStreak: 0,
+          achievements: {
+            snookerStreak5: false,
+            snookerStreak10: false,
+            snookerStreak20: false,
+            poolStreak5: false,
+            poolStreak10: false,
+            poolStreak20: false,
+          },
         },
         {
           id: "6",
@@ -463,6 +562,18 @@ export const useStore = create<StoreState>()(
           isAdmin: false,
           status: "pending",
           createdAt: new Date().toISOString(),
+          snookerWinStreak: 0,
+          snookerMaxWinStreak: 0,
+          poolWinStreak: 0,
+          poolMaxWinStreak: 0,
+          achievements: {
+            snookerStreak5: false,
+            snookerStreak10: false,
+            snookerStreak20: false,
+            poolStreak5: false,
+            poolStreak10: false,
+            poolStreak20: false,
+          },
         },
       ],
 
@@ -545,71 +656,7 @@ export const useStore = create<StoreState>()(
         },
       ],
 
-      waitingPlayers: [
-        {
-          id: "1",
-          userId: "2",
-          name: "Mohammed Ali",
-          gameType: "pool",
-          skillLevel: "competitive",
-          timeRange: "now",
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: "2",
-          userId: "3",
-          name: "Fatima Zahra",
-          gameType: "snooker",
-          skillLevel: "beginner",
-          timeRange: "30min",
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: "3",
-          userId: "4",
-          name: "Youssef Amrani",
-          gameType: "ps5",
-          skillLevel: "casual",
-          timeRange: "60min",
-          createdAt: new Date().toISOString(),
-        },
-      ],
 
-      matches: [
-        {
-          id: "1",
-          creatorId: "2",
-          creatorName: "Mohammed Ali",
-          gameType: "pool",
-          skillLevel: "competitive",
-          date: new Date().toISOString().split("T")[0],
-          timeSlot: { id: "4", start: "13:00", end: "14:00" },
-          stationId: "1",
-          playerCount: 1,
-          maxPlayers: 2,
-          players: ["2"],
-          matchType: "first-to-5",
-          isCompetitive: true,
-          status: "open",
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: "2",
-          creatorId: "3",
-          creatorName: "Fatima Zahra",
-          gameType: "snooker",
-          skillLevel: "beginner",
-          date: new Date().toISOString().split("T")[0],
-          timeSlot: { id: "8", start: "17:00", end: "18:00" },
-          stationId: "5",
-          playerCount: 1,
-          maxPlayers: 2,
-          players: ["3"],
-          duration: 60,
-          status: "open",
-          createdAt: new Date().toISOString(),
-        },
-      ],
 
       queues: [
         {
@@ -684,8 +731,6 @@ export const useStore = create<StoreState>()(
       setMatchType: (matchType) => set({ matchType }),
       setIsCompetitive: (isCompetitive) => set({ isCompetitive }),
       setSkillLevel: (skillLevel) => set({ skillLevel }),
-      setTimeRange: (timeRange) => set({ timeRange }),
-      setIsWaitingForPlayer: (isWaiting) => set({ isWaitingForPlayer: isWaiting }),
 
       resetForm: () =>
         set({
@@ -700,13 +745,16 @@ export const useStore = create<StoreState>()(
           matchType: "first-to-3",
           isCompetitive: false,
           skillLevel: "casual",
-          timeRange: "now",
           avatar: "",
           gamePreference: "all",
           password: "",
+          // Reset success modal state
+          showSuccessModal: false,
+          lastReservation: null
         }),
 
       createReservation: () => {
+        console.log("🔵 createReservation function called")
         const state = get()
 
         if (!state.selectedGameType || !state.selectedDate || !state.selectedTimeSlot) {
@@ -719,11 +767,21 @@ export const useStore = create<StoreState>()(
         }
 
         // Find an available station of the selected type
-        const availableStations = get().getAvailableStations(
-          state.selectedGameType,
-          state.selectedDate,
-          state.selectedTimeSlot.id,
-        )
+        let availableStations = []
+
+        // For PS5 with dynamic time slots, we handle availability differently
+        if (state.selectedGameType === "ps5") {
+          // For dynamic time slots, we've already checked availability in the selector
+          // Just get any PS5 station
+          availableStations = get().stations.filter(s => s.type === "ps5")
+        } else {
+          // For other game types, use the standard availability check
+          availableStations = get().getAvailableStations(
+            state.selectedGameType,
+            state.selectedDate,
+            state.selectedTimeSlot.id,
+          )
+        }
 
         // If no stations are available, show queue option
         if (availableStations.length === 0) {
@@ -732,6 +790,7 @@ export const useStore = create<StoreState>()(
           return false
         }
 
+        // Create the reservation
         const newReservation: Reservation = {
           id: Date.now().toString(),
           userId: state.currentUser?.id,
@@ -757,9 +816,16 @@ export const useStore = create<StoreState>()(
           newReservation.isCompetitive = state.isCompetitive
         }
 
+        // Add the reservation and set success modal state in a single operation
         set((state) => ({
           reservations: [...state.reservations, newReservation],
+          lastReservation: newReservation,
+          showSuccessModal: true,
+          selectedTimeSlot: null
         }))
+
+        // Refresh time slots for the date of the new reservation
+        get().refreshTimeSlots(newReservation.date)
 
         // Check if this reservation fulfills a queue entry
         const queueEntries = get().queues.filter(
@@ -773,232 +839,69 @@ export const useStore = create<StoreState>()(
           get().completeQueueEntry(queueEntries[0].id)
         }
 
-        // Reset form after successful reservation
-        get().resetForm()
+        // Don't reset the form immediately - we need to keep the lastReservation
+        // We'll reset it after the success modal is closed
 
         return true
       },
 
-      // Actions - Waiting Players
-      addWaitingPlayer: () => {
-        const state = get()
 
-        if (!state.selectedGameType || !state.name) {
-          return false
-        }
 
-        // Check if user is approved
-        if (state.currentUser && state.currentUser.status !== "approved") {
-          return false
-        }
 
-        const newWaitingPlayer: WaitingPlayer = {
-          id: Date.now().toString(),
-          userId: state.currentUser?.id,
-          name: state.currentUser?.name || state.name,
-          gameType: state.selectedGameType,
-          skillLevel: state.skillLevel,
-          timeRange: state.timeRange,
-          createdAt: new Date().toISOString(),
-        }
 
-        set((state) => ({
-          waitingPlayers: [...state.waitingPlayers, newWaitingPlayer],
-          isWaitingForPlayer: true,
-        }))
 
-        return true
-      },
 
-      removeWaitingPlayer: (id) => {
-        set((state) => ({
-          waitingPlayers: state.waitingPlayers.filter((player) => player.id !== id),
-          isWaitingForPlayer: false,
-        }))
-      },
 
-      // Actions - Matches
-      createMatch: () => {
-        const state = get()
 
-        if (!state.selectedGameType || !state.selectedDate || !state.selectedTimeSlot || !state.currentUser) {
-          return null
-        }
 
-        // Check if user is approved
-        if (state.currentUser.status !== "approved") {
-          return null
-        }
 
-        // Find an available station of the selected type
-        const availableStations = get().getAvailableStations(
-          state.selectedGameType,
-          state.selectedDate,
-          state.selectedTimeSlot.id,
-        )
+      updateWinStreak: (userId, gameType, isWin) => {
+        const user = get().users.find(u => u.id === userId)
+        if (!user) return
 
-        if (availableStations.length === 0) {
-          return null
-        }
+        if (gameType === "snooker") {
+          // Update snooker win streak
+          const newStreak = isWin ? user.snookerWinStreak + 1 : 0
+          const newMaxStreak = Math.max(user.snookerMaxWinStreak, newStreak)
 
-        // Determine max players based on game type
-        let maxPlayers = 2 // Default for most games
-        if (state.selectedGameType === "ps5") {
-          maxPlayers = 4 // PS5 can have up to 4 players
-        }
+          // Check for achievements
+          const achievements = { ...user.achievements }
+          if (newStreak >= 5) achievements.snookerStreak5 = true
+          if (newStreak >= 10) achievements.snookerStreak10 = true
+          if (newStreak >= 20) achievements.snookerStreak20 = true
 
-        const newMatch: Match = {
-          id: Date.now().toString(),
-          creatorId: state.currentUser.id,
-          creatorName: state.currentUser.name,
-          gameType: state.selectedGameType,
-          skillLevel: state.skillLevel,
-          date: state.selectedDate,
-          timeSlot: state.selectedTimeSlot,
-          stationId: availableStations[0].id,
-          playerCount: 1, // Creator is the first player
-          maxPlayers: maxPlayers,
-          players: [state.currentUser.id],
-          status: "open",
-          createdAt: new Date().toISOString(),
-        }
-
-        // Add game-specific properties
-        if (state.selectedGameType === "ps5" || state.selectedGameType === "snooker") {
-          newMatch.duration = state.duration
-        }
-
-        if (state.selectedGameType === "pool") {
-          newMatch.matchType = state.matchType
-          newMatch.isCompetitive = state.isCompetitive
-        }
-
-        set((state) => ({
-          matches: [...state.matches, newMatch],
-        }))
-
-        return newMatch.id
-      },
-
-      joinMatch: (matchId) => {
-        const state = get()
-        const match = state.matches.find((m) => m.id === matchId)
-
-        if (!match || !state.currentUser) {
-          return false
-        }
-
-        // Check if user is approved
-        if (state.currentUser.status !== "approved") {
-          return false
-        }
-
-        // Check if match is open
-        if (match.status !== "open") {
-          return false
-        }
-
-        // Check if match is full
-        if (match.playerCount >= match.maxPlayers) {
-          return false
-        }
-
-        // Check if user is already in the match
-        if (match.players.includes(state.currentUser.id)) {
-          return false
-        }
-
-        // Update the match
-        set((state) => ({
-          matches: state.matches.map((m) =>
-            m.id === matchId
-              ? {
-                  ...m,
-                  playerCount: m.playerCount + 1,
-                  players: [...m.players, state.currentUser!.id],
-                  status: m.playerCount + 1 >= m.maxPlayers ? "in_progress" : "open"
-                }
-              : m
-          ),
-        }))
-
-        // Update the waiting player if they were waiting
-        const waitingPlayer = state.waitingPlayers.find((player) => player.userId === state.currentUser?.id)
-        if (waitingPlayer) {
           set((state) => ({
-            waitingPlayers: state.waitingPlayers.map((player) =>
-              player.id === waitingPlayer.id ? { ...player, matchId: matchId } : player
+            users: state.users.map((u) =>
+              u.id === userId ? {
+                ...u,
+                snookerWinStreak: newStreak,
+                snookerMaxWinStreak: newMaxStreak,
+                achievements
+              } : u
+            ),
+          }))
+        } else if (gameType === "pool") {
+          // Update pool win streak
+          const newStreak = isWin ? user.poolWinStreak + 1 : 0
+          const newMaxStreak = Math.max(user.poolMaxWinStreak, newStreak)
+
+          // Check for achievements
+          const achievements = { ...user.achievements }
+          if (newStreak >= 5) achievements.poolStreak5 = true
+          if (newStreak >= 10) achievements.poolStreak10 = true
+          if (newStreak >= 20) achievements.poolStreak20 = true
+
+          set((state) => ({
+            users: state.users.map((u) =>
+              u.id === userId ? {
+                ...u,
+                poolWinStreak: newStreak,
+                poolMaxWinStreak: newMaxStreak,
+                achievements
+              } : u
             ),
           }))
         }
-
-        return true
-      },
-
-      leaveMatch: (matchId, userId) => {
-        const match = get().matches.find((m) => m.id === matchId)
-
-        if (!match) {
-          return
-        }
-
-        // Check if user is in the match
-        if (!match.players.includes(userId)) {
-          return
-        }
-
-        // If the creator leaves, cancel the match
-        if (match.creatorId === userId) {
-          set((state) => ({
-            matches: state.matches.map((m) =>
-              m.id === matchId ? { ...m, status: "cancelled" } : m
-            ),
-          }))
-          return
-        }
-
-        // Otherwise, just remove the player
-        set((state) => ({
-          matches: state.matches.map((m) =>
-            m.id === matchId
-              ? {
-                  ...m,
-                  playerCount: m.playerCount - 1,
-                  players: m.players.filter((id) => id !== userId),
-                  status: "open" // Reset to open if it was in progress
-                }
-              : m
-          ),
-        }))
-
-        // Update the waiting player if they were in a match
-        const waitingPlayer = get().waitingPlayers.find((player) => player.userId === userId)
-        if (waitingPlayer && waitingPlayer.matchId === matchId) {
-          set((state) => ({
-            waitingPlayers: state.waitingPlayers.map((player) =>
-              player.id === waitingPlayer.id ? { ...player, matchId: undefined } : player
-            ),
-          }))
-        }
-      },
-
-      getMatchById: (matchId) => {
-        return get().matches.find((match) => match.id === matchId)
-      },
-
-      getMatchesByGameType: (gameType) => {
-        if (!gameType) {
-          return get().matches.filter((match) => match.status === "open")
-        }
-        return get().matches.filter((match) => match.gameType === gameType && match.status === "open")
-      },
-
-      updateMatchStatus: (matchId, status) => {
-        set((state) => ({
-          matches: state.matches.map((match) =>
-            match.id === matchId ? { ...match, status } : match
-          ),
-        }))
       },
 
       // Actions - Registration & Auth
@@ -1091,7 +994,337 @@ export const useStore = create<StoreState>()(
         }))
       },
 
+      // Actions - Game Station Management
+      setPoolTableMode: (mode) => {
+        set({ poolTableMode: mode })
+
+        // Add notification about mode change
+        const modeText = mode === "queue" ? "Queue-Based (Auto-Pair)" : "Match-Based"
+        get().addQueueNotification(`Pool tables mode changed to ${modeText} Mode`)
+      },
+
+      getPoolTableMode: () => {
+        return get().poolTableMode
+      },
+
+      markMatchAsComplete: (stationId, winnerId, method = "admin") => {
+        const station = get().stations.find(s => s.id === stationId)
+        if (!station) return
+
+        // Update station status and current players
+        set((state) => ({
+          stations: state.stations.map((s) =>
+            s.id === stationId ? {
+              ...s,
+              status: "available",
+              currentPlayers: [],
+              currentWinner: winnerId,
+              winStreak: winnerId ? (s.winStreak || 0) + 1 : 0,
+              isFriendlyMatch: false
+            } : s
+          ),
+        }))
+
+        // If this is a snooker table, check if there are players in queue
+        if (station.type === "snooker") {
+          const nextPlayer = get().getNextPlayerInQueue("snooker")
+
+          if (nextPlayer && winnerId) {
+            // Pair the winner with the next player in queue
+            get().pairPlayersForMatch("snooker", stationId)
+          }
+        }
+      },
+
+      startFriendlyMatch: (stationId, playerIds) => {
+        const station = get().stations.find(s => s.id === stationId)
+        if (!station || station.type !== "snooker") return
+
+        // Update station for friendly match
+        set((state) => ({
+          stations: state.stations.map((s) =>
+            s.id === stationId ? {
+              ...s,
+              status: "occupied",
+              currentPlayers: playerIds,
+              isFriendlyMatch: true
+            } : s
+          ),
+        }))
+
+        // Add notification
+        get().addQueueNotification(`Friendly match started on ${station.name}`)
+      },
+
+      endFriendlyMatch: (stationId) => {
+        const station = get().stations.find(s => s.id === stationId)
+        if (!station || !station.isFriendlyMatch) return
+
+        // Reset the station
+        set((state) => ({
+          stations: state.stations.map((s) =>
+            s.id === stationId ? {
+              ...s,
+              status: "available",
+              currentPlayers: [],
+              isFriendlyMatch: false
+            } : s
+          ),
+        }))
+
+        // Add notification
+        get().addQueueNotification(`Friendly match ended on ${station.name}`)
+
+        // Check if there are players in queue
+        const nextPlayer = get().getNextPlayerInQueue("snooker")
+        if (nextPlayer) {
+          // Start a new match with players from queue
+          get().pairPlayersForMatch("snooker", stationId)
+        }
+      },
+
+      getNextPlayerInQueue: (gameType) => {
+        const queues = get().queues.filter(q =>
+          q.gameType === gameType &&
+          q.status === "waiting" &&
+          !q.isCurrentlyPlaying
+        )
+
+        // Sort by priority and position
+        const sortedQueues = [...queues].sort((a, b) => {
+          const priorityOrder = { vip: 0, high: 1, normal: 2 }
+          const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority]
+
+          if (priorityDiff !== 0) return priorityDiff
+          return a.position - b.position
+        })
+
+        return sortedQueues.length > 0 ? sortedQueues[0] : null
+      },
+
+      handleNoShow: (reservationId) => {
+        const reservation = get().reservations.find(r => r.id === reservationId)
+        if (!reservation || reservation.status !== "confirmed") return
+
+        // Mark reservation as no-show
+        set((state) => ({
+          reservations: state.reservations.map((r) =>
+            r.id === reservationId ? {
+              ...r,
+              status: "no-show",
+              updatedAt: new Date().toISOString()
+            } : r
+          ),
+        }))
+
+        // Make the station available
+        set((state) => ({
+          stations: state.stations.map((s) =>
+            s.id === reservation.stationId ? {
+              ...s,
+              status: "available",
+              currentPlayers: []
+            } : s
+          ),
+        }))
+
+        // Check if there are players in queue for this game type
+        const nextPlayer = get().getNextPlayerInQueue(reservation.gameType)
+        if (nextPlayer) {
+          // Notify the next player
+          set((state) => ({
+            queues: state.queues.map((q) =>
+              q.id === nextPlayer.id ? {
+                ...q,
+                status: "notified",
+                notifiedAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              } : q
+            ),
+          }))
+
+          // Add notification
+          get().addQueueNotification(`${reservation.name} didn't show up. ${nextPlayer.name} has been notified that a station is available.`)
+        } else {
+          // Add notification
+          get().addQueueNotification(`${reservation.name} didn't show up. Station ${reservation.stationId} is now available.`)
+        }
+      },
+
+      pairPlayersForMatch: (gameType, stationId) => {
+        const station = get().stations.find(s => s.id === stationId)
+        if (!station || station.status !== "available") return
+
+        if (gameType === "snooker") {
+          // For snooker, we need to check if there's a current winner
+          const currentWinner = station.currentWinner
+          const nextPlayer = get().getNextPlayerInQueue("snooker")
+
+          if (!nextPlayer) return
+
+          // If there's a current winner, pair them with the next player
+          if (currentWinner) {
+            const winnerUser = get().users.find(u => u.id === currentWinner)
+            const playerIds = [currentWinner, nextPlayer.userId].filter(Boolean) as string[]
+
+            // Update station
+            set((state) => ({
+              stations: state.stations.map((s) =>
+                s.id === stationId ? {
+                  ...s,
+                  status: "occupied",
+                  currentPlayers: playerIds
+                } : s
+              ),
+            }))
+
+            // Update queue entry
+            set((state) => ({
+              queues: state.queues.map((q) =>
+                q.id === nextPlayer.id ? {
+                  ...q,
+                  status: "processing",
+                  isCurrentlyPlaying: true,
+                  assignedStationId: stationId,
+                  updatedAt: new Date().toISOString()
+                } : q
+              ),
+            }))
+
+
+
+            // Add notification
+            get().addQueueNotification(`Match started on ${station.name}: ${winnerUser?.name || "Current Winner"} vs ${nextPlayer.name}`)
+          } else {
+            // If there's no current winner, we need two players from the queue
+            const nextPlayer2 = get().queues.find(q =>
+              q.gameType === "snooker" &&
+              q.status === "waiting" &&
+              !q.isCurrentlyPlaying &&
+              q.id !== nextPlayer.id
+            )
+
+            if (nextPlayer2) {
+              const playerIds = [nextPlayer.userId, nextPlayer2.userId].filter(Boolean) as string[]
+
+              // Update station
+              set((state) => ({
+                stations: state.stations.map((s) =>
+                  s.id === stationId ? {
+                    ...s,
+                    status: "occupied",
+                    currentPlayers: playerIds
+                  } : s
+                ),
+              }))
+
+              // Update queue entries
+              set((state) => ({
+                queues: state.queues.map((q) =>
+                  q.id === nextPlayer.id || q.id === nextPlayer2.id ? {
+                    ...q,
+                    status: "processing",
+                    isCurrentlyPlaying: true,
+                    assignedStationId: stationId,
+                    updatedAt: new Date().toISOString()
+                  } : q
+                ),
+              }))
+
+
+
+              // Add notification
+              get().addQueueNotification(`Match started on ${station.name}: ${nextPlayer.name} vs ${nextPlayer2.name}`)
+            } else {
+              // Only one player in queue, start a friendly match if they want
+              set((state) => ({
+                queues: state.queues.map((q) =>
+                  q.id === nextPlayer.id ? {
+                    ...q,
+                    status: "processing",
+                    isCurrentlyPlaying: true,
+                    assignedStationId: stationId,
+                    updatedAt: new Date().toISOString()
+                  } : q
+                ),
+              }))
+
+              // Add notification
+              get().addQueueNotification(`${nextPlayer.name} is waiting for an opponent on ${station.name}`)
+            }
+          }
+        } else if (gameType === "pool") {
+          // For pool tables in queue mode, we need to pair players
+          if (get().poolTableMode === "queue") {
+            const nextPlayer = get().getNextPlayerInQueue("pool")
+
+            if (!nextPlayer) return
+
+            // Check if there's a second player
+            const nextPlayer2 = get().queues.find(q =>
+              q.gameType === "pool" &&
+              q.status === "waiting" &&
+              !q.isCurrentlyPlaying &&
+              q.id !== nextPlayer.id
+            )
+
+            if (nextPlayer2) {
+              const playerIds = [nextPlayer.userId, nextPlayer2.userId].filter(Boolean) as string[]
+
+              // Update station
+              set((state) => ({
+                stations: state.stations.map((s) =>
+                  s.id === stationId ? {
+                    ...s,
+                    status: "occupied",
+                    currentPlayers: playerIds
+                  } : s
+                ),
+              }))
+
+              // Update queue entries
+              set((state) => ({
+                queues: state.queues.map((q) =>
+                  q.id === nextPlayer.id || q.id === nextPlayer2.id ? {
+                    ...q,
+                    status: "processing",
+                    isCurrentlyPlaying: true,
+                    assignedStationId: stationId,
+                    updatedAt: new Date().toISOString()
+                  } : q
+                ),
+              }))
+
+
+
+              // Add notification
+              get().addQueueNotification(`Match started on ${station.name}: ${nextPlayer.name} vs ${nextPlayer2.name}`)
+            } else {
+              // Only one player in queue, they'll have to wait
+              set((state) => ({
+                queues: state.queues.map((q) =>
+                  q.id === nextPlayer.id ? {
+                    ...q,
+                    status: "processing",
+                    assignedStationId: stationId,
+                    updatedAt: new Date().toISOString()
+                  } : q
+                ),
+              }))
+
+              // Add notification
+              get().addQueueNotification(`${nextPlayer.name} is waiting for an opponent on ${station.name}`)
+            }
+          }
+        }
+      },
+
       updateReservationStatus: (id, status) => {
+        // Get the reservation before updating
+        const reservation = get().reservations.find(r => r.id === id)
+        if (!reservation) return
+
+        // Update the reservation status
         set((state) => ({
           reservations: state.reservations.map((reservation) =>
             reservation.id === id ? {
@@ -1101,6 +1334,12 @@ export const useStore = create<StoreState>()(
             } : reservation,
           ),
         }))
+
+        // If the reservation was cancelled, refresh time slots for that date
+        if (status === "cancelled" && reservation.date) {
+          // Refresh time slots for the date of the cancelled reservation
+          get().refreshTimeSlots(reservation.date)
+        }
       },
 
       deleteReservation: (id) => {
@@ -1151,24 +1390,193 @@ export const useStore = create<StoreState>()(
         return id
       },
 
+      // Generate dynamic time slots for PS5 based on duration
+      // Refresh all time slots for a specific date
+      refreshTimeSlots: (date: string) => {
+        if (!date) return
+
+        // Force refresh of time slots for different durations
+        get().getDynamicPS5TimeSlots(date, 10)
+        get().getDynamicPS5TimeSlots(date, 30)
+        get().getDynamicPS5TimeSlots(date, 60)
+        get().getDynamicPS5TimeSlots(date, 120)
+
+        // For pool and snooker, we don't need to refresh separately
+        // as they use fixed time slots that are filtered based on reservations
+      },
+
+      getDynamicPS5TimeSlots: (date: string, duration: number = 10) => {
+        const { timeSlots, reservations } = get()
+
+        // Create a map of all PS5 stations
+        const ps5Stations = get().stations.filter(s => s.type === "ps5")
+        if (ps5Stations.length === 0) return []
+
+        // For simplicity, we'll use the first PS5 station for availability checks
+        const stationId = ps5Stations[0].id
+
+        // Create dynamic time slots
+        const dynamicSlots: TimeSlot[] = []
+
+        // Get current time for today's slots
+        const now = new Date()
+        const today = now.toISOString().split('T')[0]
+        const isToday = date === today
+
+        // Calculate the buffer time (2 minutes after current time)
+        let startTimeMinutes = 0
+
+        if (isToday) {
+          const currentHour = now.getHours()
+          const currentMinute = now.getMinutes()
+          startTimeMinutes = currentHour * 60 + currentMinute + 2 // 2-minute buffer
+        } else {
+          // For future dates, start at the beginning of the day
+          startTimeMinutes = 0
+        }
+
+        // Get the business hours from the standard time slots
+        let businessStartMinutes = 24 * 60 // Default to end of day
+        let businessEndMinutes = 0 // Default to start of day
+
+        timeSlots.forEach(slot => {
+          const [startHour, startMinute] = slot.start.split(':').map(Number)
+          const [endHour, endMinute] = slot.end.split(':').map(Number)
+
+          const slotStartMinutes = startHour * 60 + startMinute
+          const slotEndMinutes = endHour * 60 + endMinute
+
+          businessStartMinutes = Math.min(businessStartMinutes, slotStartMinutes)
+          businessEndMinutes = Math.max(businessEndMinutes, slotEndMinutes)
+        })
+
+        // If today, ensure we start after the current time + buffer
+        if (isToday) {
+          businessStartMinutes = Math.max(businessStartMinutes, startTimeMinutes)
+
+          // If current time is after business hours, return empty array
+          if (startTimeMinutes >= businessEndMinutes) {
+            return []
+          }
+        }
+
+        // Don't round - use the exact time + buffer
+        let firstSlotStart = businessStartMinutes
+
+        // Filter reservations for this date and station
+        const stationReservations = reservations.filter(r =>
+          r.gameType === "ps5" &&
+          r.date === date &&
+          r.status === "confirmed" &&
+          r.stationId === stationId
+        )
+
+        // Generate slots based on the selected duration
+        // We'll increment by the duration for all slot types
+        for (let time = firstSlotStart; time < businessEndMinutes; time += duration) {
+          const slotEndTime = time + duration
+
+          // Skip if the slot ends after business hours
+          if (slotEndTime > businessEndMinutes) {
+            continue
+          }
+
+          const slotStartHour = Math.floor(time / 60)
+          const slotStartMinute = time % 60
+
+          const slotEndHour = Math.floor(slotEndTime / 60)
+          const slotEndMinute = slotEndTime % 60
+
+          const formattedStartHour = slotStartHour.toString().padStart(2, '0')
+          const formattedStartMinute = slotStartMinute.toString().padStart(2, '0')
+          const formattedEndHour = slotEndHour.toString().padStart(2, '0')
+          const formattedEndMinute = slotEndMinute.toString().padStart(2, '0')
+
+          const dynamicSlot: TimeSlot = {
+            id: `dynamic-${time}-${slotEndTime}`,
+            start: `${formattedStartHour}:${formattedStartMinute}`,
+            end: `${formattedEndHour}:${formattedEndMinute}`
+          }
+
+          // Check if this slot is available (not overlapping with any reservation)
+          const isSlotAvailable = !stationReservations.some(reservation => {
+            // Get reservation start and end times
+            const [resStartHour, resStartMinute] = reservation.timeSlot.start.split(':').map(Number)
+            const resStartMinutes = resStartHour * 60 + resStartMinute
+
+            // Calculate reservation end time based on duration
+            const resEndMinutes = resStartMinutes + (reservation.duration || 60)
+
+            // Check if there's an overlap
+            return (time >= resStartMinutes && time < resEndMinutes) ||
+                   (slotEndTime > resStartMinutes && slotEndTime <= resEndMinutes) ||
+                   (time <= resStartMinutes && slotEndTime >= resEndMinutes)
+          })
+
+          if (isSlotAvailable) {
+            dynamicSlots.push(dynamicSlot)
+          }
+        }
+
+        return dynamicSlots
+      },
+
       // Getters
       getAvailableStations: (gameType, date, timeSlotId) => {
-        const { stations, reservations } = get()
+        const { stations, reservations, timeSlots } = get()
 
         // Filter stations by game type
         const stationsByType = stations.filter((station) => station.type === gameType)
 
+        // Get the selected time slot
+        const selectedTimeSlot = timeSlots.find(ts => ts.id === timeSlotId)
+        if (!selectedTimeSlot) return []
+
         // Check which stations are available for the selected date and time slot
         return stationsByType.filter((station) => {
-          const isReserved = reservations.some(
-            (reservation) =>
-              reservation.stationId === station.id &&
-              reservation.date === date &&
-              reservation.timeSlot.id === timeSlotId &&
-              reservation.status === "confirmed",
-          )
+          // For PS5, we need to check if the time slot overlaps with any existing reservation
+          if (gameType === "ps5") {
+            // Get the time slot index
+            const timeSlotIndex = timeSlots.findIndex(ts => ts.id === timeSlotId)
 
-          return !isReserved
+            // Check if any reservation overlaps with this time slot
+            const isReserved = reservations.some(reservation => {
+              if (reservation.stationId !== station.id ||
+                  reservation.date !== date ||
+                  reservation.status !== "confirmed") {
+                return false
+              }
+
+              // Get the reservation's time slot index
+              const reservationTimeSlotIndex = timeSlots.findIndex(ts => ts.id === reservation.timeSlot.id)
+
+              // For short durations (less than 1 hour), only block the exact time slot
+              if (reservation.duration && reservation.duration < 60) {
+                return timeSlotIndex === reservationTimeSlotIndex;
+              }
+
+              // For longer durations, calculate how many time slots this reservation spans
+              // Assuming each time slot is 1 hour and duration is in minutes
+              const slotsSpanned = Math.ceil((reservation.duration || 60) / 60)
+
+              // Check if this time slot falls within the reservation's span
+              return timeSlotIndex >= reservationTimeSlotIndex &&
+                     timeSlotIndex < reservationTimeSlotIndex + slotsSpanned
+            })
+
+            return !isReserved
+          } else {
+            // For other game types, just check if the exact time slot is reserved
+            const isReserved = reservations.some(
+              (reservation) =>
+                reservation.stationId === station.id &&
+                reservation.date === date &&
+                reservation.timeSlot.id === timeSlotId &&
+                reservation.status === "confirmed",
+            )
+
+            return !isReserved
+          }
         })
       },
 
@@ -1246,18 +1654,199 @@ export const useStore = create<StoreState>()(
         return availableStations.length === 0
       },
 
+      // Game Station Management Getters
+      getCurrentPlayersOnStation: (stationId) => {
+        const station = get().stations.find(s => s.id === stationId)
+        return station?.currentPlayers || []
+      },
+
+      getCurrentWinnerOnStation: (stationId) => {
+        const station = get().stations.find(s => s.id === stationId)
+        return station?.currentWinner
+      },
+
+      getWinStreakForStation: (stationId) => {
+        const station = get().stations.find(s => s.id === stationId)
+        return station?.winStreak || 0
+      },
+
+      getWinStreakForUser: (userId, gameType) => {
+        const user = get().users.find(u => u.id === userId)
+        if (!user) return 0
+
+        if (gameType === "snooker") {
+          return user.snookerWinStreak
+        } else if (gameType === "pool") {
+          return user.poolWinStreak
+        }
+
+        return 0
+      },
+
+      getMaxWinStreakForUser: (userId, gameType) => {
+        const user = get().users.find(u => u.id === userId)
+        if (!user) return 0
+
+        if (gameType === "snooker") {
+          return user.snookerMaxWinStreak
+        } else if (gameType === "pool") {
+          return user.poolMaxWinStreak
+        }
+
+        return 0
+      },
+
+      getUserAchievements: (userId) => {
+        const user = get().users.find(u => u.id === userId)
+        if (!user) {
+          return {
+            snookerStreak5: false,
+            snookerStreak10: false,
+            snookerStreak20: false,
+            poolStreak5: false,
+            poolStreak10: false,
+            poolStreak20: false,
+          }
+        }
+
+        return user.achievements
+      },
+
+      getMatchLogs: (stationId, gameType) => {
+        let logs = get().matchLogs
+
+        if (stationId) {
+          logs = logs.filter(log => log.stationId === stationId)
+        }
+
+        if (gameType) {
+          logs = logs.filter(log => log.gameType === gameType)
+        }
+
+        return logs
+      },
+
+      getEstimatedWaitTimeForGameType: (gameType) => {
+        const queues = get().queues.filter(q => q.gameType === gameType && q.status === "waiting")
+        const stations = get().stations.filter(s => s.type === gameType)
+
+        if (queues.length === 0) return 0
+
+        // Calculate based on historical match duration
+        const completedMatches = get().matches.filter(m =>
+          m.gameType === gameType &&
+          m.status === "completed" &&
+          m.matchDuration
+        )
+
+        let avgMatchDuration = 30 // Default 30 minutes
+        if (completedMatches.length > 0) {
+          const totalDuration = completedMatches.reduce((sum, match) => sum + (match.matchDuration || 0), 0)
+          avgMatchDuration = totalDuration / completedMatches.length
+        }
+
+        // Calculate available stations
+        const availableStations = stations.filter(s => s.status === "available").length
+
+        // If there are available stations, the wait time is 0 for the first players
+        if (availableStations > 0 && gameType !== "snooker") {
+          // For pool in queue mode, we need 2 players to start
+          if (gameType === "pool" && get().poolTableMode === "queue") {
+            return queues.length <= 1 ? 0 : Math.ceil(((queues.length - 2) / 2) * avgMatchDuration)
+          }
+
+          // For PS5, each player gets their own session
+          return 0
+        }
+
+        // For snooker, calculate based on position in queue
+        if (gameType === "snooker") {
+          // Sort queues by position
+          const sortedQueues = [...queues].sort((a, b) => a.position - b.position)
+
+          // If there's a current match, add the remaining time
+          const currentMatch = get().matches.find(m =>
+            m.gameType === "snooker" &&
+            m.status === "in_progress"
+          )
+
+          let remainingTime = 0
+          if (currentMatch) {
+            const startTime = new Date(currentMatch.createdAt)
+            const now = new Date()
+            const elapsedMinutes = Math.round((now.getTime() - startTime.getTime()) / (1000 * 60))
+            remainingTime = Math.max(0, avgMatchDuration - elapsedMinutes)
+          }
+
+          // Calculate wait time based on position
+          const position = sortedQueues.findIndex(q => q.id === queues[0].id)
+          return remainingTime + (position * avgMatchDuration)
+        }
+
+        // For pool tables, calculate based on number of tables and players
+        if (gameType === "pool") {
+          const occupiedTables = stations.filter(s => s.status === "occupied").length
+          const totalTables = stations.length
+
+          // In queue mode, players are paired
+          if (get().poolTableMode === "queue") {
+            const pairs = Math.ceil(queues.length / 2)
+            return Math.ceil((pairs / totalTables) * avgMatchDuration)
+          }
+
+          // In match mode, calculate based on position and available tables
+          return Math.ceil((queues.length / totalTables) * avgMatchDuration)
+        }
+
+        // For PS5, calculate based on reservation duration
+        if (gameType === "ps5") {
+          const currentReservation = get().reservations.find(r =>
+            r.gameType === "ps5" &&
+            r.status === "confirmed" &&
+            r.stationId === stations[0]?.id
+          )
+
+          if (currentReservation) {
+            const startTime = new Date(currentReservation.date + "T" + currentReservation.timeSlot.start)
+            const now = new Date()
+            const elapsedMinutes = Math.round((now.getTime() - startTime.getTime()) / (1000 * 60))
+            const remainingTime = Math.max(0, currentReservation.duration - elapsedMinutes)
+
+            return remainingTime
+          }
+
+          return 0
+        }
+
+        return avgMatchDuration
+      },
+
+      getNextQueuedPlayers: (gameType, count) => {
+        const queues = get().queues.filter(q =>
+          q.gameType === gameType &&
+          q.status === "waiting" &&
+          !q.isCurrentlyPlaying
+        )
+
+        // Sort by priority and position
+        const sortedQueues = [...queues].sort((a, b) => {
+          const priorityOrder = { vip: 0, high: 1, normal: 2 }
+          const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority]
+
+          if (priorityDiff !== 0) return priorityDiff
+          return a.position - b.position
+        })
+
+        return sortedQueues.slice(0, count)
+      },
+
       getReservationsForDate: (date) => {
         return get().reservations.filter(
           (reservation) => reservation.date === date && reservation.status === "confirmed",
         )
       },
 
-      getWaitingPlayersByGameType: (gameType) => {
-        if (!gameType) {
-          return get().waitingPlayers
-        }
-        return get().waitingPlayers.filter((player) => player.gameType === gameType)
-      },
+
 
       getMaxMatches: (matchType) => {
         switch (matchType) {
@@ -1299,17 +1888,15 @@ export const useStore = create<StoreState>()(
         return get().reservations.filter((reservation) => reservation.userId === userId)
       },
 
-      getOpenMatches: () => {
-        return get().matches.filter((match) => match.status === "open")
-      },
 
-      getMatchesByUser: (userId) => {
-        return get().matches.filter((match) => match.players.includes(userId))
-      },
 
       // Queue Actions
       setShowQueueJoinModal: (show) => {
         set({ showQueueJoinModal: show })
+      },
+
+      setShowSuccessModal: (show) => {
+        set({ showSuccessModal: show })
       },
 
       addToQueue: (entry) => {

@@ -2,27 +2,26 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { useStore, type Station, type TimeSlot } from "@/store/use-store"
+import { useStore, type Station } from "@/store/use-store"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+
 import { Calendar } from "@/components/ui/calendar"
 import { format } from "date-fns"
 import { Badge } from "@/components/ui/badge"
-import { BombIcon as BilliardBall, Target, Gamepad2, CalendarIcon, Clock, Edit, Trash2 } from "lucide-react"
+import { CalendarIcon, Clock } from "lucide-react"
 import TableSelection from "@/components/admin/table-selection"
 import ProtectedRoute from "@/components/protected-route"
 
-export default function AdminTablesPage() {
+export default function DashboardTablesPage() {
   const router = useRouter()
   const {
     stations,
     timeSlots,
-    reservations,
     createAdminReservation,
     updateStationStatus,
     getReservationsForDate,
@@ -54,8 +53,8 @@ export default function AdminTablesPage() {
     if (!selectedTimeSlotId) return null
 
     return dateReservations.find(
-      reservation => 
-        reservation.stationId === tableId && 
+      reservation =>
+        reservation.stationId === tableId &&
         reservation.timeSlot.id === selectedTimeSlotId &&
         reservation.status === "confirmed"
     )
@@ -101,7 +100,7 @@ export default function AdminTablesPage() {
       <div className="container mx-auto py-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Table Management</h1>
-          <Button onClick={() => router.push("/admin")}>Back to Dashboard</Button>
+          <Button onClick={() => router.push("/dashboard")}>Back to Dashboard</Button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -147,7 +146,7 @@ export default function AdminTablesPage() {
                   </Select>
                 </div>
 
-                <Button 
+                <Button
                   className="w-full"
                   disabled={!selectedTimeSlotId || !selectedTableId}
                   onClick={() => setShowCreateReservationDialog(true)}
@@ -187,7 +186,7 @@ export default function AdminTablesPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {poolTables.map((table) => {
                   const reservation = getTableReservation(table.id)
-                  
+
                   return (
                     <Card key={table.id}>
                       <CardContent className="p-4">
@@ -202,7 +201,7 @@ export default function AdminTablesPage() {
                             {table.status || "Available"}
                           </Badge>
                         </div>
-                        
+
                         {reservation && (
                           <div className="text-sm text-gray-600 mb-3">
                             <div>Reserved by: {reservation.name}</div>
@@ -210,10 +209,10 @@ export default function AdminTablesPage() {
                             {reservation.notes && <div className="italic text-xs mt-1">{reservation.notes}</div>}
                           </div>
                         )}
-                        
+
                         <div className="flex gap-2 mt-2">
-                          <Select 
-                            value={table.status || "available"} 
+                          <Select
+                            value={table.status || "available"}
                             onValueChange={(value) => handleTableStatusChange(table.id, value as Station["status"])}
                           >
                             <SelectTrigger className="w-full">

@@ -109,7 +109,24 @@ export default function ConfirmationScreen() {
               <Clock className="h-5 w-5 text-blue-900" />
               <span className="ml-2 text-gray-700 font-medium w-32">Time:</span>
               <span className="text-gray-900">
-                {selectedTimeSlot ? `${selectedTimeSlot.start} - ${selectedTimeSlot.end}` : ""}
+                {selectedTimeSlot ?
+                  (selectedGameType === "ps5" && duration < 60) ?
+                    (() => {
+                      const [startHour, startMinute] = selectedTimeSlot.start.split(":").map(Number);
+                      // Use the selected date or today's date
+                      const startDate = selectedDate ? new Date(selectedDate) : new Date();
+                      startDate.setHours(startHour, startMinute, 0);
+
+                      const endDate = new Date(startDate);
+                      endDate.setMinutes(endDate.getMinutes() + duration);
+
+                      const endHour = endDate.getHours().toString().padStart(2, "0");
+                      const endMinute = endDate.getMinutes().toString().padStart(2, "0");
+
+                      return `${selectedTimeSlot.start} - ${endHour}:${endMinute}`;
+                    })()
+                  : `${selectedTimeSlot.start} - ${selectedTimeSlot.end}`
+                : ""}
               </span>
             </div>
 

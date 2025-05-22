@@ -82,7 +82,10 @@ export default function ReservePage() {
           </Card>
 
           {/* Confirmation Modal */}
-          <ConfirmationModal open={showConfirmation} onOpenChange={setShowConfirmation} />
+          <ConfirmationModal
+            open={showConfirmation}
+            onOpenChange={setShowConfirmation}
+          />
 
           {/* Queue Join Modal */}
           <JoinQueueModal />

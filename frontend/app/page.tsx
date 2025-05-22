@@ -52,16 +52,6 @@ export default function Home() {
                   size="lg"
                   className="border-white text-white hover:bg-white/10 bg-blue-900/50"
                 >
-                  <Link href="/find-match">
-                    <Users className="mr-2 h-5 w-5" /> Find a Match
-                  </Link>
-                </Button>
-                <Button
-                  asChild
-                  variant="outline"
-                  size="lg"
-                  className="border-white text-white hover:bg-white/10 bg-blue-900/50"
-                >
                   <Link href="/register">
                     <ShieldCheck className="mr-2 h-5 w-5" /> Register
                   </Link>

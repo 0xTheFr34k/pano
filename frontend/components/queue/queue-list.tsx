@@ -17,62 +17,62 @@ interface QueueListProps {
 }
 
 export function QueueList({ isAdmin = false }: QueueListProps) {
-  const { 
-    queues, 
-    getQueuesByGameType, 
+  const {
+    queues,
+    getQueuesByGameType,
     getQueuesByStatus,
     timeSlots,
     updateQueuePosition,
     addToQueue,
   } = useStore()
-  
+
   const [activeGameTab, setActiveGameTab] = useState<string>("all")
   const [statusFilter, setStatusFilter] = useState<QueueStatus | "all">("waiting")
   const [showAddDialog, setShowAddDialog] = useState(false)
-  
+
   // New guest form state
   const [guestName, setGuestName] = useState("")
   const [guestEmail, setGuestEmail] = useState("")
   const [guestPhone, setGuestPhone] = useState("")
   const [guestGameType, setGuestGameType] = useState<GameType>("pool")
   const [guestPlayerCount, setGuestPlayerCount] = useState(2)
-  const [guestTimeSlotId, setGuestTimeSlotId] = useState("")
+  const [guestTimeSlotId, setGuestTimeSlotId] = useState("none")
   const [guestPriority, setGuestPriority] = useState<"normal" | "high" | "vip">("normal")
-  
+
   // Filter queues based on selected game type and status
   const filteredQueues = (): QueueEntry[] => {
-    let result = activeGameTab === "all" 
-      ? queues 
+    let result = activeGameTab === "all"
+      ? queues
       : getQueuesByGameType(activeGameTab as GameType)
-    
+
     if (statusFilter !== "all") {
       result = result.filter(q => q.status === statusFilter)
     }
-    
+
     // Sort by priority (VIP first, then high, then normal) and then by position
     return result.sort((a, b) => {
       const priorityOrder = { vip: 0, high: 1, normal: 2 }
       const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority]
-      
+
       if (priorityDiff !== 0) return priorityDiff
       return a.position - b.position
     })
   }
-  
+
   const handlePositionChange = (id: string, newPosition: number) => {
     updateQueuePosition(id, newPosition)
   }
-  
+
   const handleAddGuest = () => {
     if (!guestName || !guestPhone || !guestGameType) {
       return
     }
-    
+
     const today = new Date().toISOString().split("T")[0]
-    const preferredTimeSlot = guestTimeSlotId 
-      ? timeSlots.find(slot => slot.id === guestTimeSlotId) 
+    const preferredTimeSlot = (guestTimeSlotId && guestTimeSlotId !== "none")
+      ? timeSlots.find(slot => slot.id === guestTimeSlotId)
       : undefined
-    
+
     const queueEntry = {
       name: guestName,
       email: guestEmail,
@@ -84,18 +84,18 @@ export function QueueList({ isAdmin = false }: QueueListProps) {
       estimatedWaitTime: 30,
       priority: guestPriority,
     }
-    
+
     addToQueue(queueEntry)
-    
+
     // Reset form
     setGuestName("")
     setGuestEmail("")
     setGuestPhone("")
     setGuestGameType("pool")
     setGuestPlayerCount(2)
-    setGuestTimeSlotId("")
+    setGuestTimeSlotId("none")
     setGuestPriority("normal")
-    
+
     setShowAddDialog(false)
   }
 
@@ -103,7 +103,7 @@ export function QueueList({ isAdmin = false }: QueueListProps) {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h2 className="text-xl font-semibold">Queue Management</h2>
-        
+
         {isAdmin && (
           <div className="flex items-center gap-2">
             <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as QueueStatus | "all")}>
@@ -119,7 +119,7 @@ export function QueueList({ isAdmin = false }: QueueListProps) {
                 <SelectItem value="cancelled">Cancelled</SelectItem>
               </SelectContent>
             </Select>
-            
+
             <Button onClick={() => setShowAddDialog(true)}>
               <UserPlus className="h-4 w-4 mr-2" />
               Add Guest
@@ -127,7 +127,7 @@ export function QueueList({ isAdmin = false }: QueueListProps) {
           </div>
         )}
       </div>
-      
+
       <Tabs value={activeGameTab} onValueChange={setActiveGameTab} className="w-full">
         <TabsList className="grid grid-cols-4 mb-6">
           <TabsTrigger value="all">All</TabsTrigger>
@@ -144,7 +144,7 @@ export function QueueList({ isAdmin = false }: QueueListProps) {
             <span>PS5</span>
           </TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value={activeGameTab}>
           <div className="space-y-4">
             {filteredQueues().length === 0 ? (
@@ -153,9 +153,9 @@ export function QueueList({ isAdmin = false }: QueueListProps) {
               </div>
             ) : (
               filteredQueues().map((queue) => (
-                <QueueCard 
-                  key={queue.id} 
-                  queue={queue} 
+                <QueueCard
+                  key={queue.id}
+                  queue={queue}
                   isAdmin={isAdmin}
                   onPositionChange={handlePositionChange}
                 />
@@ -164,14 +164,14 @@ export function QueueList({ isAdmin = false }: QueueListProps) {
           </div>
         </TabsContent>
       </Tabs>
-      
+
       {/* Add Guest Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Add Guest to Queue</DialogTitle>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="guest-name">Guest Name</Label>
@@ -182,7 +182,7 @@ export function QueueList({ isAdmin = false }: QueueListProps) {
                 placeholder="Enter guest name"
               />
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="guest-email">Email (Optional)</Label>
@@ -194,7 +194,7 @@ export function QueueList({ isAdmin = false }: QueueListProps) {
                   placeholder="guest@example.com"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="guest-phone">Phone Number</Label>
                 <Input
@@ -205,7 +205,7 @@ export function QueueList({ isAdmin = false }: QueueListProps) {
                 />
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="guest-game-type">Game Type</Label>
@@ -220,11 +220,11 @@ export function QueueList({ isAdmin = false }: QueueListProps) {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="guest-player-count">Number of Players</Label>
-                <Select 
-                  value={guestPlayerCount.toString()} 
+                <Select
+                  value={guestPlayerCount.toString()}
                   onValueChange={(value) => setGuestPlayerCount(parseInt(value))}
                 >
                   <SelectTrigger id="guest-player-count">
@@ -239,7 +239,7 @@ export function QueueList({ isAdmin = false }: QueueListProps) {
                 </Select>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="guest-time-slot">Preferred Time (Optional)</Label>
@@ -248,7 +248,7 @@ export function QueueList({ isAdmin = false }: QueueListProps) {
                     <SelectValue placeholder="Select time slot" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No preference</SelectItem>
+                    <SelectItem value="none">No preference</SelectItem>
                     {timeSlots.map((slot) => (
                       <SelectItem key={slot.id} value={slot.id}>
                         {slot.start} - {slot.end}
@@ -257,11 +257,11 @@ export function QueueList({ isAdmin = false }: QueueListProps) {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="guest-priority">Priority</Label>
-                <Select 
-                  value={guestPriority} 
+                <Select
+                  value={guestPriority}
                   onValueChange={(value) => setGuestPriority(value as "normal" | "high" | "vip")}
                 >
                   <SelectTrigger id="guest-priority">
@@ -276,7 +276,7 @@ export function QueueList({ isAdmin = false }: QueueListProps) {
               </div>
             </div>
           </div>
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddDialog(false)}>
               Cancel
