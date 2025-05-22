@@ -15,10 +15,16 @@ export default function DashboardQueuePage() {
 
   return (
     <ProtectedRoute requireAdmin>
-      <div className="container mx-auto py-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Queue Management</h1>
-          <Button onClick={() => router.push("/dashboard")}>Back to Dashboard</Button>
+      <div className="container mx-auto py-6 px-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold">Queue Management</h1>
+          <Button
+            onClick={() => router.push("/dashboard")}
+            className="w-full sm:w-auto text-gray-700 border-gray-300 hover:bg-gray-50 hover:text-gray-900"
+            variant="outline"
+          >
+            Back to Dashboard
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">

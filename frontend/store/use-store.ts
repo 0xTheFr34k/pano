@@ -6,7 +6,7 @@ import { persist } from "zustand/middleware"
 // Define types
 export type GameType = "pool" | "snooker" | "ps5"
 export type SkillLevel = "beginner" | "casual" | "competitive"
-export type MatchType = "first-to-3" | "first-to-5" | "first-to-7" | "time-based"
+export type MatchType = "first-to-3" | "first-to-5" | "first-to-7" | "first-to-10" | "first-to-15" | "time-based"
 export type GamePreference = GameType | "all"
 export type UserStatus = "pending" | "approved" | "rejected"
 export type MatchStatus = "open" | "in_progress" | "completed" | "cancelled"
@@ -130,6 +130,9 @@ interface StoreState {
   matchType: MatchType // For pool
   isCompetitive: boolean // For pool
   skillLevel: SkillLevel
+  preferredTableId: string | null // For table preference
+  snookerMatchCount: number // For snooker when multiple players
+  shouldJoinQueue: boolean // For single player scenarios
 
   // Registration form state
   avatar: string
@@ -188,6 +191,9 @@ interface StoreState {
   setMatchType: (matchType: MatchType) => void
   setIsCompetitive: (isCompetitive: boolean) => void
   setSkillLevel: (skillLevel: SkillLevel) => void
+  setPreferredTableId: (tableId: string | null) => void
+  setSnookerMatchCount: (count: number) => void
+  setShouldJoinQueue: (shouldJoin: boolean) => void
   resetForm: () => void
   createReservation: () => void
 
@@ -298,6 +304,9 @@ export const useStore = create<StoreState>()(
       matchType: "first-to-3", // Default for pool
       isCompetitive: false, // Default for pool
       skillLevel: "casual",
+      preferredTableId: null,
+      snookerMatchCount: 1, // Default to 1 match for snooker
+      shouldJoinQueue: false, // Default to false
 
       // Registration form state
       avatar: "",
@@ -373,42 +382,6 @@ export const useStore = create<StoreState>()(
           winStreak: 0
         },
         {
-          id: "5",
-          name: "Pool Table 5",
-          type: "pool",
-          available: true,
-          status: "available",
-          coordinates: { x: 290, y: 10 },
-          size: "standard"
-        },
-        {
-          id: "6",
-          name: "Pool Table 6",
-          type: "pool",
-          available: true,
-          status: "available",
-          coordinates: { x: 290, y: 120 },
-          size: "standard"
-        },
-        {
-          id: "7",
-          name: "Pool Table 7",
-          type: "pool",
-          available: true,
-          status: "available",
-          coordinates: { x: 430, y: 10 },
-          size: "standard"
-        },
-        {
-          id: "8",
-          name: "Pool Table 8",
-          type: "pool",
-          available: true,
-          status: "available",
-          coordinates: { x: 430, y: 120 },
-          size: "standard"
-        },
-        {
           id: "9",
           name: "Snooker Table",
           type: "snooker",
@@ -434,16 +407,6 @@ export const useStore = create<StoreState>()(
       ],
 
       timeSlots: [
-        { id: "1", start: "14:00", end: "15:00" },
-        { id: "2", start: "15:00", end: "16:00" },
-        { id: "3", start: "16:00", end: "17:00" },
-        { id: "4", start: "17:00", end: "18:00" },
-        { id: "5", start: "18:00", end: "19:00" },
-        { id: "6", start: "19:00", end: "20:00" },
-        { id: "7", start: "20:00", end: "21:00" },
-        { id: "8", start: "21:00", end: "22:00" },
-        { id: "9", start: "22:00", end: "23:00" },
-        { id: "10", start: "23:00", end: "00:00" },
       ],
 
       users: [
@@ -589,138 +552,9 @@ export const useStore = create<StoreState>()(
         },
       ],
 
-      reservations: [
-        // Some sample reservations
-        {
-          id: "1",
-          userId: "2",
-          stationId: "1",
-          date: new Date().toISOString().split("T")[0],
-          timeSlot: { id: "3", start: "12:00", end: "13:00" },
-          gameType: "pool",
-          playerCount: 2,
-          name: "Mohammed Ali",
-          email: "mohammed@example.com",
-          phone: "+212612345678",
-          matchType: "first-to-3",
-          isCompetitive: true,
-          status: "confirmed",
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: "2",
-          userId: "3",
-          stationId: "5",
-          date: new Date().toISOString().split("T")[0],
-          timeSlot: { id: "7", start: "16:00", end: "17:00" },
-          gameType: "snooker",
-          playerCount: 2,
-          name: "Fatima Zahra",
-          email: "fatima@example.com",
-          phone: "+212698765432",
-          duration: 60,
-          status: "confirmed",
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: "3",
-          userId: "4",
-          stationId: "6",
-          date: new Date().toISOString().split("T")[0],
-          timeSlot: { id: "10", start: "19:00", end: "20:00" },
-          gameType: "ps5",
-          playerCount: 4,
-          name: "Youssef Amrani",
-          email: "youssef@example.com",
-          phone: "+212633445566",
-          duration: 60,
-          status: "confirmed",
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: "4",
-          stationId: "2",
-          date: new Date(Date.now() + 86400000).toISOString().split("T")[0], // Tomorrow
-          timeSlot: { id: "5", start: "14:00", end: "15:00" },
-          gameType: "pool",
-          playerCount: 2,
-          name: "Hassan Benjelloun",
-          email: "hassan@example.com",
-          phone: "+212611223344",
-          matchType: "first-to-5",
-          isCompetitive: false,
-          status: "confirmed",
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: "5",
-          stationId: "7",
-          date: new Date(Date.now() - 86400000).toISOString().split("T")[0], // Yesterday
-          timeSlot: { id: "8", start: "17:00", end: "18:00" },
-          gameType: "ps5",
-          playerCount: 2,
-          name: "Leila Benkirane",
-          email: "leila@example.com",
-          phone: "+212655667788",
-          duration: 90,
-          status: "completed",
-          createdAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-        },
-      ],
+      reservations: [],
 
-
-
-      queues: [
-        {
-          id: "1",
-          userId: "4",
-          name: "Youssef Amrani",
-          email: "youssef@example.com",
-          phone: "+212633445566",
-          gameType: "pool",
-          playerCount: 2,
-          date: new Date().toISOString().split("T")[0],
-          preferredTimeSlot: { id: "5", start: "14:00", end: "15:00" },
-          estimatedWaitTime: 45,
-          position: 1,
-          priority: "normal",
-          status: "waiting",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-        {
-          id: "2",
-          name: "Ahmed Khalid",
-          email: "ahmed@example.com",
-          phone: "+212611223344",
-          gameType: "snooker",
-          playerCount: 1,
-          date: new Date().toISOString().split("T")[0],
-          estimatedWaitTime: 30,
-          position: 1,
-          priority: "normal",
-          status: "waiting",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-        {
-          id: "3",
-          name: "Layla Mansour",
-          email: "layla@example.com",
-          phone: "+212655667788",
-          gameType: "ps5",
-          playerCount: 4,
-          date: new Date().toISOString().split("T")[0],
-          preferredTimeSlot: { id: "9", start: "18:00", end: "19:00" },
-          estimatedWaitTime: 60,
-          position: 1,
-          priority: "high",
-          status: "notified",
-          notifiedAt: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-      ],
+      queues: [],
 
       // Actions - Reservation
       setSelectedGameType: (gameType) => set({ selectedGameType: gameType }),
@@ -734,6 +568,9 @@ export const useStore = create<StoreState>()(
       setMatchType: (matchType) => set({ matchType }),
       setIsCompetitive: (isCompetitive) => set({ isCompetitive }),
       setSkillLevel: (skillLevel) => set({ skillLevel }),
+      setPreferredTableId: (preferredTableId) => set({ preferredTableId }),
+      setSnookerMatchCount: (snookerMatchCount) => set({ snookerMatchCount }),
+      setShouldJoinQueue: (shouldJoinQueue) => set({ shouldJoinQueue }),
 
       resetForm: () =>
         set({
@@ -748,6 +585,9 @@ export const useStore = create<StoreState>()(
           matchType: "first-to-3",
           isCompetitive: false,
           skillLevel: "casual",
+          preferredTableId: null,
+          snookerMatchCount: 1,
+          shouldJoinQueue: false,
           avatar: "",
           gamePreference: "all",
           password: "",
@@ -793,11 +633,19 @@ export const useStore = create<StoreState>()(
           return false
         }
 
+        // Select the station to use
+        let selectedStationId = availableStations[0].id // Default to first available
+
+        // If user has a preferred table and it's available, use it
+        if (state.preferredTableId && availableStations.some(s => s.id === state.preferredTableId)) {
+          selectedStationId = state.preferredTableId
+        }
+
         // Create the reservation
         const newReservation: Reservation = {
           id: Date.now().toString(),
           userId: state.currentUser?.id,
-          stationId: availableStations[0].id,
+          stationId: selectedStationId,
           date: state.selectedDate,
           timeSlot: state.selectedTimeSlot,
           gameType: state.selectedGameType,
@@ -1871,6 +1719,12 @@ export const useStore = create<StoreState>()(
             return 9 // (5*2)-1
           case "first-to-7":
             return 13 // (7*2)-1
+          case "first-to-10":
+            return 19 // (10*2)-1
+          case "first-to-15":
+            return 29 // (15*2)-1
+          case "time-based":
+            return 0 // No specific match count for time-based
           default:
             return 0
         }

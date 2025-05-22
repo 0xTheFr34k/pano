@@ -9,7 +9,9 @@ import PS5ReservationForm from "@/components/reservation/ps5-reservation-form"
 import PoolReservationForm from "@/components/reservation/pool-reservation-form"
 import SnookerReservationForm from "@/components/reservation/snooker-reservation-form"
 import ConfirmationModal from "@/components/reservation/confirmation-modal"
-import { BombIcon as BilliardBall, Target, Gamepad2 } from "lucide-react"
+import { Gamepad2 } from "lucide-react"
+import { SnookerIcon } from "@/components/icons/snooker-icon"
+import { EightBallIcon } from "@/components/icons/eight-ball-icon"
 import ProtectedRoute from "@/components/protected-route"
 import JoinQueueModal from "@/components/queue/join-queue-modal"
 
@@ -57,11 +59,11 @@ export default function ReservePage() {
                     <span>PS5</span>
                   </TabsTrigger>
                   <TabsTrigger value="pool" className="flex items-center gap-2">
-                    <BilliardBall className="h-4 w-4" />
+                    <EightBallIcon className="h-4 w-4" />
                     <span>Pool (8-ball)</span>
                   </TabsTrigger>
                   <TabsTrigger value="snooker" className="flex items-center gap-2">
-                    <Target className="h-4 w-4" />
+                    <SnookerIcon className="h-4 w-4" />
                     <span>Snooker</span>
                   </TabsTrigger>
                 </TabsList>

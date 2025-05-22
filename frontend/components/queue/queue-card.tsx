@@ -10,9 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { BombIcon as BilliardBall, Target, Gamepad2, User, Clock, Calendar, AlertCircle, CheckCircle2, Bell, ArrowUp, Trash2, Edit, MoreHorizontal } from "lucide-react"
+import { Gamepad2, User, Clock, Calendar, AlertCircle, CheckCircle2, Bell, ArrowUp, Trash2, Edit, MoreHorizontal } from "lucide-react"
+import { SnookerIcon } from "@/components/icons/snooker-icon"
+import { EightBallIcon } from "@/components/icons/eight-ball-icon"
 import { format } from "date-fns"
-import { 
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -26,11 +28,11 @@ interface QueueCardProps {
 }
 
 export function QueueCard({ queue, isAdmin = false, onPositionChange }: QueueCardProps) {
-  const { 
-    updateQueuePriority, 
-    notifyQueueEntry, 
-    markQueueEntryAsProcessing, 
-    completeQueueEntry, 
+  const {
+    updateQueuePriority,
+    notifyQueueEntry,
+    markQueueEntryAsProcessing,
+    completeQueueEntry,
     cancelQueueEntry,
     updateQueueEntry,
     removeFromQueue,
@@ -47,9 +49,9 @@ export function QueueCard({ queue, isAdmin = false, onPositionChange }: QueueCar
   const getGameIcon = () => {
     switch (queue.gameType) {
       case "pool":
-        return <BilliardBall className="h-5 w-5 text-blue-700" />
+        return <EightBallIcon className="h-5 w-5 text-blue-700" />
       case "snooker":
-        return <Target className="h-5 w-5 text-blue-700" />
+        return <SnookerIcon className="h-5 w-5 text-blue-700" />
       case "ps5":
         return <Gamepad2 className="h-5 w-5 text-blue-700" />
       default:
@@ -153,10 +155,10 @@ export function QueueCard({ queue, isAdmin = false, onPositionChange }: QueueCar
     <>
       <Card className="overflow-hidden">
         <div className={`border-l-4 ${
-          queue.priority === "vip" 
-            ? "border-purple-500" 
-            : queue.priority === "high" 
-              ? "border-orange-500" 
+          queue.priority === "vip"
+            ? "border-purple-500"
+            : queue.priority === "high"
+              ? "border-orange-500"
               : "border-blue-500"
         }`}>
           <CardContent className="p-4">
@@ -194,7 +196,7 @@ export function QueueCard({ queue, isAdmin = false, onPositionChange }: QueueCar
                   </div>
                 </div>
               </div>
-              
+
               {isAdmin && (
                 <div className="flex items-center gap-2">
                   {isActive && (
@@ -247,7 +249,7 @@ export function QueueCard({ queue, isAdmin = false, onPositionChange }: QueueCar
           <DialogHeader>
             <DialogTitle>Edit Queue Entry</DialogTitle>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="priority">Priority</Label>
@@ -262,7 +264,7 @@ export function QueueCard({ queue, isAdmin = false, onPositionChange }: QueueCar
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="position">Position</Label>
               <Input
@@ -273,7 +275,7 @@ export function QueueCard({ queue, isAdmin = false, onPositionChange }: QueueCar
                 onChange={(e) => setNewPosition(parseInt(e.target.value))}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="wait-time">Estimated Wait Time (minutes)</Label>
               <Input
@@ -284,7 +286,7 @@ export function QueueCard({ queue, isAdmin = false, onPositionChange }: QueueCar
                 onChange={(e) => setNewEstimatedWaitTime(parseInt(e.target.value))}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="notes">Notes</Label>
               <Textarea
@@ -295,7 +297,7 @@ export function QueueCard({ queue, isAdmin = false, onPositionChange }: QueueCar
               />
             </div>
           </div>
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowEditDialog(false)}>
               Cancel
@@ -316,7 +318,7 @@ export function QueueCard({ queue, isAdmin = false, onPositionChange }: QueueCar
               Are you sure you want to remove {queue.name} from the queue? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
               Cancel

@@ -3,31 +3,33 @@
 import { useStore } from "@/store/use-store"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { BombIcon as BilliardBall, Target, Gamepad2, Clock, Users } from "lucide-react"
+import { Gamepad2, Clock, Users } from "lucide-react"
+import { SnookerIcon } from "@/components/icons/snooker-icon"
+import { EightBallIcon } from "@/components/icons/eight-ball-icon"
 
 export function QueueStatistics() {
   const { getQueueStatistics, getActiveQueueEntries } = useStore()
-  
+
   const stats = getQueueStatistics()
   const activeQueues = getActiveQueueEntries()
-  
+
   // Calculate total capacity
   const totalCapacity = activeQueues.reduce((sum, queue) => sum + queue.playerCount, 0)
-  
+
   // Get game type icon
   const getGameIcon = (type: string) => {
     switch (type) {
       case "pool":
-        return <BilliardBall className="h-5 w-5 text-blue-700" />
+        return <EightBallIcon className="h-5 w-5 text-blue-700" />
       case "snooker":
-        return <Target className="h-5 w-5 text-blue-700" />
+        return <SnookerIcon className="h-5 w-5 text-blue-700" />
       case "ps5":
         return <Gamepad2 className="h-5 w-5 text-blue-700" />
       default:
         return null
     }
   }
-  
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -42,7 +44,7 @@ export function QueueStatistics() {
             </p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-500">Average Wait Time</CardTitle>
@@ -55,7 +57,7 @@ export function QueueStatistics() {
             </p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-500">Total Capacity</CardTitle>
@@ -69,7 +71,7 @@ export function QueueStatistics() {
           </CardContent>
         </Card>
       </div>
-      
+
       <Card>
         <CardHeader>
           <CardTitle>Queue Distribution</CardTitle>
@@ -78,10 +80,10 @@ export function QueueStatistics() {
           <div className="space-y-4">
             {stats.queuesByGameType.map((item) => {
               // Calculate percentage
-              const percentage = stats.totalWaiting > 0 
-                ? Math.round((item.count / stats.totalWaiting) * 100) 
+              const percentage = stats.totalWaiting > 0
+                ? Math.round((item.count / stats.totalWaiting) * 100)
                 : 0
-              
+
               return (
                 <div key={item.gameType} className="space-y-2">
                   <div className="flex items-center justify-between">

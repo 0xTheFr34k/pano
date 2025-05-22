@@ -31,7 +31,7 @@ export function CustomButton({
   const textColorClasses = {
     default: "text-white font-bold",
     destructive: "text-white font-bold",
-    outline: "text-white font-bold", // Changed to always be white for outline buttons
+    outline: "text-gray-700 font-bold", // Fixed to use dark text for outline buttons
     secondary: "text-blue-900 dark:text-white font-bold",
     ghost: "text-blue-900 dark:text-white font-bold",
     link: "text-blue-900 dark:text-white font-bold",
@@ -41,7 +41,7 @@ export function CustomButton({
   const hoverTextColorClasses = {
     default: "hover:text-white",
     destructive: "hover:text-white",
-    outline: "hover:text-white", // Changed to always be white for outline buttons
+    outline: "hover:text-white", // White text on hover when background changes
     secondary: "hover:text-blue-900 dark:hover:text-white",
     ghost: "hover:text-blue-900 dark:hover:text-white",
     link: "hover:text-blue-900 dark:hover:text-white",

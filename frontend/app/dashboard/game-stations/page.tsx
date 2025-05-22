@@ -3,7 +3,9 @@
 import { useState } from "react"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { BombIcon as BilliardBall, Target, Gamepad2 } from "lucide-react"
+import { Gamepad2 } from "lucide-react"
+import { SnookerIcon } from "@/components/icons/snooker-icon"
+import { EightBallIcon } from "@/components/icons/eight-ball-icon"
 import SnookerQueueSystem from "@/components/snooker/snooker-queue-system"
 import PoolTablesManagement from "@/components/pool/pool-tables-management"
 import PS5CalendarView from "@/components/ps5/ps5-calendar-view"
@@ -14,24 +16,26 @@ export default function GameStationsPage() {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto py-6">
-        <h1 className="text-3xl font-bold mb-2">Game Stations Management</h1>
-        <p className="text-gray-600 mb-6">
+      <div className="container mx-auto py-6 px-4">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Game Stations Management</h1>
+        <p className="text-gray-600 mb-6 text-sm sm:text-base">
           Manage all game stations, queues, and reservations
         </p>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-3 mb-8 w-full max-w-md">
-            <TabsTrigger value="snooker" className="flex items-center gap-2">
-              <Target className="h-4 w-4" />
-              <span>Snooker</span>
+          <TabsList className="grid grid-cols-3 mb-8 w-full max-w-md mx-auto">
+            <TabsTrigger value="snooker" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+              <SnookerIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Snooker</span>
+              <span className="sm:hidden">Snooker</span>
             </TabsTrigger>
-            <TabsTrigger value="pool" className="flex items-center gap-2">
-              <BilliardBall className="h-4 w-4" />
-              <span>Pool Tables</span>
+            <TabsTrigger value="pool" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+              <EightBallIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Pool Tables</span>
+              <span className="sm:hidden">Pool</span>
             </TabsTrigger>
-            <TabsTrigger value="ps5" className="flex items-center gap-2">
-              <Gamepad2 className="h-4 w-4" />
+            <TabsTrigger value="ps5" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+              <Gamepad2 className="h-3 w-3 sm:h-4 sm:w-4" />
               <span>PS5</span>
             </TabsTrigger>
           </TabsList>

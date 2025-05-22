@@ -13,7 +13,6 @@ import {
 import { Button } from "@/components/ui/button"
 import {
   Check,
-  BombIcon as BilliardBall,
   Target,
   Gamepad2,
   Calendar,
@@ -23,6 +22,8 @@ import {
   Mail,
   Phone,
 } from "lucide-react"
+import { SnookerIcon } from "@/components/icons/snooker-icon"
+import { EightBallIcon } from "@/components/icons/eight-ball-icon"
 import { format } from "date-fns"
 
 interface ConfirmationModalProps {
@@ -58,9 +59,9 @@ export default function ConfirmationModal({ open, onOpenChange }: ConfirmationMo
   const getGameIcon = () => {
     switch (selectedGameType) {
       case "pool":
-        return <BilliardBall className="h-5 w-5 text-blue-900" />
+        return <EightBallIcon className="h-5 w-5 text-blue-900" />
       case "snooker":
-        return <Target className="h-5 w-5 text-blue-900" />
+        return <SnookerIcon className="h-5 w-5 text-blue-900" />
       case "ps5":
         return <Gamepad2 className="h-5 w-5 text-blue-900" />
       default:
@@ -83,6 +84,10 @@ export default function ConfirmationModal({ open, onOpenChange }: ConfirmationMo
         return "First to 5 wins"
       case "first-to-7":
         return "First to 7 wins"
+      case "first-to-10":
+        return "First to 10 wins"
+      case "first-to-15":
+        return "First to 15 wins"
       case "time-based":
         return "Time-based (no target)"
       default:

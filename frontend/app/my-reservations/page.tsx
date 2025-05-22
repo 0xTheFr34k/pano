@@ -7,13 +7,14 @@ import {
   Calendar,
   Clock,
   Users,
-  BombIcon as BilliardBall,
   Target,
   Gamepad2,
   Eye,
   XCircle,
   RefreshCw,
 } from "lucide-react"
+import { SnookerIcon } from "@/components/icons/snooker-icon"
+import { EightBallIcon } from "@/components/icons/eight-ball-icon"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -30,9 +31,9 @@ import ProtectedRoute from "@/components/protected-route"
 import { useRouter } from "next/navigation"
 
 export default function MyReservationsPage() {
-  const { 
-    currentUser, 
-    getUserReservations, 
+  const {
+    currentUser,
+    getUserReservations,
     updateReservationStatus,
     reservations,
     getDynamicPS5TimeSlots
@@ -84,17 +85,17 @@ export default function MyReservationsPage() {
   // Refresh availability by forcing a re-fetch of time slots
   function refreshAvailability() {
     setRefreshing(true)
-    
+
     // Force refresh of time slots for today
     if (currentUser) {
       // Get today's date in YYYY-MM-DD format
       const today = new Date().toISOString().split("T")[0]
-      
+
       // Refresh time slots for different durations
       getDynamicPS5TimeSlots(today, 10)
       getDynamicPS5TimeSlots(today, 30)
       getDynamicPS5TimeSlots(today, 60)
-      
+
       // Set a timeout to reset the refreshing state
       setTimeout(() => {
         setRefreshing(false)
@@ -106,9 +107,9 @@ export default function MyReservationsPage() {
   const getGameIcon = (type: string) => {
     switch (type) {
       case "pool":
-        return <BilliardBall className="h-5 w-5 text-blue-900" />
+        return <EightBallIcon className="h-5 w-5 text-blue-900" />
       case "snooker":
-        return <Target className="h-5 w-5 text-blue-900" />
+        return <SnookerIcon className="h-5 w-5 text-blue-900" />
       case "ps5":
         return <Gamepad2 className="h-5 w-5 text-blue-900" />
       default:
@@ -148,7 +149,7 @@ export default function MyReservationsPage() {
     if (selectedReservation) {
       updateReservationStatus(selectedReservation.id, "cancelled")
       setCancelDialogOpen(false)
-      
+
       // Refresh availability after cancellation
       refreshAvailability()
     }
@@ -168,6 +169,10 @@ export default function MyReservationsPage() {
         return "First to 5 wins"
       case "first-to-7":
         return "First to 7 wins"
+      case "first-to-10":
+        return "First to 10 wins"
+      case "first-to-15":
+        return "First to 15 wins"
       case "time-based":
         return "Time-based (no target)"
       default:
@@ -185,8 +190,8 @@ export default function MyReservationsPage() {
               <p className="text-gray-600 mt-1">View and manage your bookings</p>
             </div>
             <div className="flex gap-2">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={refreshAvailability}
                 disabled={refreshing}
                 className="flex items-center gap-2"
@@ -194,7 +199,7 @@ export default function MyReservationsPage() {
                 <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
-              <Button 
+              <Button
                 className="bg-blue-900 hover:bg-blue-800"
                 onClick={() => router.push('/reserve')}
               >

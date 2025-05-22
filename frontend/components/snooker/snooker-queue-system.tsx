@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Target, Users, Clock, Trophy, Crown, Award } from "lucide-react"
+import { Users, Clock, Trophy, Crown, Award } from "lucide-react"
+import { SnookerIcon } from "@/components/icons/snooker-icon"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 export default function SnookerQueueSystem() {
@@ -134,7 +135,7 @@ export default function SnookerQueueSystem() {
       <Card className="md:col-span-2">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Target className="h-5 w-5" />
+            <SnookerIcon className="h-5 w-5" />
             <span>Snooker Table Status</span>
           </CardTitle>
           <CardDescription>

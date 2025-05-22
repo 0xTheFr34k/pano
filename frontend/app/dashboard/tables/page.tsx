@@ -97,10 +97,16 @@ export default function DashboardTablesPage() {
 
   return (
     <ProtectedRoute requireAdmin>
-      <div className="container mx-auto py-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Table Management</h1>
-          <Button onClick={() => router.push("/dashboard")}>Back to Dashboard</Button>
+      <div className="container mx-auto py-6 px-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold">Table Management</h1>
+          <Button
+            onClick={() => router.push("/dashboard")}
+            className="w-full sm:w-auto text-gray-700 border-gray-300 hover:bg-gray-50 hover:text-gray-900"
+            variant="outline"
+          >
+            Back to Dashboard
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -147,7 +153,7 @@ export default function DashboardTablesPage() {
                 </div>
 
                 <Button
-                  className="w-full"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                   disabled={!selectedTimeSlotId || !selectedTableId}
                   onClick={() => setShowCreateReservationDialog(true)}
                 >
@@ -242,43 +248,46 @@ export default function DashboardTablesPage() {
               <DialogTitle>Create Reservation</DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Guest Name</Label>
+                  <Label htmlFor="name" className="text-sm font-medium">Guest Name</Label>
                   <Input
                     id="name"
                     value={guestName}
                     onChange={(e) => setGuestName(e.target.value)}
                     placeholder="Enter guest name"
+                    className="text-gray-700"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
+                  <Label htmlFor="phone" className="text-sm font-medium">Phone Number</Label>
                   <Input
                     id="phone"
                     value={guestPhone}
                     onChange={(e) => setGuestPhone(e.target.value)}
                     placeholder="+212 XXXXXXXXX"
+                    className="text-gray-700"
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email (Optional)</Label>
+                <Label htmlFor="email" className="text-sm font-medium">Email (Optional)</Label>
                 <Input
                   id="email"
                   type="email"
                   value={guestEmail}
                   onChange={(e) => setGuestEmail(e.target.value)}
                   placeholder="guest@example.com"
+                  className="text-gray-700"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="playerCount">Number of Players</Label>
+                <Label htmlFor="playerCount" className="text-sm font-medium">Number of Players</Label>
                 <Select
                   value={guestPlayerCount.toString()}
                   onValueChange={(value) => setGuestPlayerCount(parseInt(value))}
                 >
-                  <SelectTrigger id="playerCount">
+                  <SelectTrigger id="playerCount" className="text-gray-700">
                     <SelectValue placeholder="Select player count" />
                   </SelectTrigger>
                   <SelectContent>
@@ -290,20 +299,30 @@ export default function DashboardTablesPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="notes">Notes (Optional)</Label>
+                <Label htmlFor="notes" className="text-sm font-medium">Notes (Optional)</Label>
                 <Input
                   id="notes"
                   value={guestNotes}
                   onChange={(e) => setGuestNotes(e.target.value)}
                   placeholder="Any special requests or notes"
+                  className="text-gray-700"
                 />
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowCreateReservationDialog(false)}>
+            <DialogFooter className="flex flex-col sm:flex-row gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowCreateReservationDialog(false)}
+                className="w-full sm:w-auto text-gray-700 border-gray-300 hover:bg-gray-50 hover:text-gray-900"
+              >
                 Cancel
               </Button>
-              <Button onClick={handleCreateReservation}>Create Reservation</Button>
+              <Button
+                onClick={handleCreateReservation}
+                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Create Reservation
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

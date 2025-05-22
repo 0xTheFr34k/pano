@@ -9,7 +9,8 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { BombIcon as BilliardBall, Users, Clock, Trophy, Crown, Award, Shuffle } from "lucide-react"
+import { Users, Clock, Trophy, Crown, Award, Shuffle } from "lucide-react"
+import { EightBallIcon } from "@/components/icons/eight-ball-icon"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
@@ -119,7 +120,7 @@ export default function PoolTablesManagement() {
           <div className="flex justify-between items-center">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <BilliardBall className="h-5 w-5" />
+                <EightBallIcon className="h-5 w-5" />
                 <span>Pool Tables Management</span>
               </CardTitle>
               <CardDescription>
@@ -236,7 +237,7 @@ export default function PoolTablesManagement() {
                       </div>
                     ) : (
                       <div className="py-4 text-center">
-                        <BilliardBall className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                        <EightBallIcon className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                         <p className="font-medium">Table Available</p>
                         <p className="text-sm text-gray-500 mt-1">Ready for new players</p>
 
