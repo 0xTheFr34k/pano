@@ -198,7 +198,8 @@ export default function PS5CalendarView() {
           <div className="mt-4 space-y-2">
             <h3 className="font-medium">PS5 Status</h3>
             <div className="flex items-center gap-2">
-              <Badge variant={ps5Station?.status === "available" ? "success" : "secondary"}>
+              <Badge variant={ps5Station?.status === "available" ? "secondary" : "outline"}
+                     className={ps5Station?.status === "available" ? "bg-green-500 text-white" : ""}>
                 {ps5Station?.status || "Loading..."}
               </Badge>
               {ps5Station?.status === "occupied" && (

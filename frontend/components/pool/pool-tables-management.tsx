@@ -82,10 +82,14 @@ export default function PoolTablesManagement() {
 
   // Get current match for a station
   const getCurrentMatch = (stationId: string) => {
-    return matches.find(m =>
-      m.stationId === stationId &&
-      m.status === "in_progress"
-    )
+    // Since matches are removed, we'll check if station has current players
+    const station = stations.find(s => s.id === stationId)
+    return station?.currentPlayers && station.currentPlayers.length > 0 ? {
+      id: `match-${stationId}`,
+      stationId,
+      players: station.currentPlayers,
+      status: "in_progress" as const
+    } : null
   }
 
   // Get estimated wait time
@@ -150,9 +154,13 @@ export default function PoolTablesManagement() {
                     <div className="flex justify-between items-center">
                       <CardTitle className="text-base">{station.name}</CardTitle>
                       <Badge variant={
-                        station.status === "available" ? "success" :
+                        station.status === "available" ? "secondary" :
                         station.status === "occupied" ? "default" :
-                        "secondary"
+                        "outline"
+                      } className={
+                        station.status === "available" ? "bg-green-500 text-white" :
+                        station.status === "occupied" ? "bg-red-500 text-white" :
+                        ""
                       }>
                         {station.status}
                       </Badge>
@@ -173,7 +181,7 @@ export default function PoolTablesManagement() {
                                 <div className="flex items-center gap-2 text-sm text-gray-500">
                                   <span>{player.skillLevel}</span>
                                   {getWinStreakForUser(player.id, "pool") > 0 && (
-                                    <Badge variant="outline" size="sm" className="text-xs">
+                                    <Badge variant="outline" className="text-xs">
                                       <Trophy className="h-3 w-3 mr-1" />
                                       {getWinStreakForUser(player.id, "pool")} wins
                                     </Badge>
@@ -196,7 +204,7 @@ export default function PoolTablesManagement() {
                           <div className="bg-blue-50 p-3 rounded-lg text-sm">
                             <div className="flex justify-between items-center">
                               <div>
-                                <span className="font-medium">Match Type:</span> {currentMatch.matchType || "Standard"}
+                                <span className="font-medium">Match Type:</span> Standard
                               </div>
                               {winStreak > 0 && (
                                 <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
@@ -317,7 +325,7 @@ export default function PoolTablesManagement() {
                             </Badge>
                           )}</span>
                           {user && getWinStreakForUser(user.id, "pool") > 0 && (
-                            <Badge variant="outline" size="sm" className="text-xs">
+                            <Badge variant="outline" className="text-xs">
                               <Trophy className="h-3 w-3 mr-1" />
                               {getWinStreakForUser(user.id, "pool")} wins
                             </Badge>

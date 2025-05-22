@@ -61,8 +61,8 @@ export default function PS5ReservationForm({ onConfirm }: PS5ReservationFormProp
 
   // Update the selected date when the date changes
   const handleDateChange = (newDate: Date | undefined) => {
-    setDate(newDate)
     if (newDate) {
+      setDate(newDate)
       const formattedDate = format(newDate, "yyyy-MM-dd")
       setSelectedDate(formattedDate)
 

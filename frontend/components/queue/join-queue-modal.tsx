@@ -50,7 +50,7 @@ export default function JoinQueueModal() {
       gameType: selectedGameType,
       playerCount,
       date: selectedDate,
-      preferredTimeSlot,
+      preferredTimeSlot: preferredTimeSlot || undefined,
       estimatedWaitTime,
       priority: "normal" as const,
     }

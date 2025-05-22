@@ -16,7 +16,6 @@ export default function SnookerQueueSystem() {
     stations,
     queues,
     users,
-    matches,
     markMatchAsComplete,
     startFriendlyMatch,
     endFriendlyMatch,
@@ -48,13 +47,16 @@ export default function SnookerQueueSystem() {
   useEffect(() => {
     if (!snookerStation) return
 
-    const match = matches.find(m => 
-      m.stationId === snookerStation.id && 
-      m.status === "in_progress"
-    )
-    
+    // Check if station has current players to determine if there's a match
+    const match = snookerStation.currentPlayers && snookerStation.currentPlayers.length > 0 ? {
+      id: `match-${snookerStation.id}`,
+      stationId: snookerStation.id,
+      players: snookerStation.currentPlayers,
+      status: "in_progress" as const
+    } : null
+
     setCurrentMatch(match)
-  }, [snookerStation, matches])
+  }, [snookerStation])
 
   // Get queued players
   useEffect(() => {
@@ -77,15 +79,15 @@ export default function SnookerQueueSystem() {
   // Handle starting a friendly match
   const handleStartFriendlyMatch = () => {
     if (!snookerStation) return
-    
+
     // Use the first two users for a friendly match
     const playerIds = users
       .filter(u => u.status === "approved")
       .slice(0, 2)
       .map(u => u.id)
-    
+
     if (playerIds.length < 2) return
-    
+
     startFriendlyMatch(snookerStation.id, playerIds)
   }
 
@@ -147,19 +149,23 @@ export default function SnookerQueueSystem() {
                   <h3 className="text-lg font-semibold">{snookerStation.name}</h3>
                   <div className="flex items-center gap-2 mt-1">
                     <Badge variant={
-                      snookerStation.status === "available" ? "success" :
+                      snookerStation.status === "available" ? "secondary" :
                       snookerStation.status === "occupied" ? "default" :
-                      "secondary"
+                      "outline"
+                    } className={
+                      snookerStation.status === "available" ? "bg-green-500 text-white" :
+                      snookerStation.status === "occupied" ? "bg-red-500 text-white" :
+                      ""
                     }>
                       {snookerStation.status}
                     </Badge>
-                    
+
                     {snookerStation.isFriendlyMatch && (
                       <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
                         Friendly Match
                       </Badge>
                     )}
-                    
+
                     {getTableWinStreak() > 0 && (
                       <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
                         <Trophy className="h-3 w-3 mr-1" />
@@ -168,14 +174,14 @@ export default function SnookerQueueSystem() {
                     )}
                   </div>
                 </div>
-                
+
                 <div className="flex gap-2">
                   {snookerStation.status === "available" && queuedPlayers.length === 0 && (
                     <Button onClick={handleStartFriendlyMatch}>
                       Start Friendly Match
                     </Button>
                   )}
-                  
+
                   {snookerStation.isFriendlyMatch && (
                     <Button variant="destructive" onClick={handleEndFriendlyMatch}>
                       End Friendly Match
@@ -183,7 +189,7 @@ export default function SnookerQueueSystem() {
                   )}
                 </div>
               </div>
-              
+
               {snookerStation.status === "occupied" && (
                 <div className="bg-slate-50 p-4 rounded-lg">
                   <h3 className="font-medium mb-3">Current Players</h3>
@@ -204,16 +210,16 @@ export default function SnookerQueueSystem() {
                           <div className="flex items-center gap-2 text-sm text-gray-500">
                             <span>{player.skillLevel}</span>
                             {getWinStreakForUser(player.id, "snooker") > 0 && (
-                              <Badge variant="outline" size="sm" className="text-xs">
+                              <Badge variant="outline" className="text-xs">
                                 <Trophy className="h-3 w-3 mr-1" />
                                 {getWinStreakForUser(player.id, "snooker")} wins
                               </Badge>
                             )}
                           </div>
                         </div>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           className="ml-auto"
                           onClick={() => handleShowAchievements(player)}
                         >
@@ -222,10 +228,10 @@ export default function SnookerQueueSystem() {
                       </div>
                     ))}
                   </div>
-                  
+
                   <div className="mt-4 flex justify-center gap-3">
                     {getCurrentPlayers().map((player) => (
-                      <Button 
+                      <Button
                         key={player.id}
                         onClick={() => handleCompleteMatch(player.id)}
                         className="bg-blue-900 hover:bg-blue-800"
@@ -233,7 +239,7 @@ export default function SnookerQueueSystem() {
                         {player.name} Won
                       </Button>
                     ))}
-                    <Button 
+                    <Button
                       variant="outline"
                       onClick={() => handleCompleteMatch()}
                     >
@@ -242,7 +248,7 @@ export default function SnookerQueueSystem() {
                   </div>
                 </div>
               )}
-              
+
               <div>
                 <h3 className="font-medium mb-3">Queue Information</h3>
                 <div className="grid grid-cols-2 gap-4">
@@ -260,7 +266,7 @@ export default function SnookerQueueSystem() {
           )}
         </CardContent>
       </Card>
-      
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -283,7 +289,7 @@ export default function SnookerQueueSystem() {
               <div className="space-y-3">
                 {queuedPlayers.map((player, index) => {
                   const user = player.userId ? getUserById(player.userId) : null
-                  
+
                   return (
                     <div key={player.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
                       <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 text-blue-900 flex items-center justify-center font-semibold">
@@ -298,7 +304,7 @@ export default function SnookerQueueSystem() {
                             </Badge>
                           )}</span>
                           {user && getWinStreakForUser(user.id, "snooker") > 0 && (
-                            <Badge variant="outline" size="sm" className="text-xs">
+                            <Badge variant="outline" className="text-xs">
                               <Trophy className="h-3 w-3 mr-1" />
                               {getWinStreakForUser(user.id, "snooker")} wins
                             </Badge>
@@ -319,14 +325,14 @@ export default function SnookerQueueSystem() {
           </ScrollArea>
         </CardContent>
       </Card>
-      
+
       {/* Achievements Dialog */}
       <Dialog open={showAchievements} onOpenChange={setShowAchievements}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Player Achievements</DialogTitle>
           </DialogHeader>
-          
+
           {selectedUser && (
             <div className="space-y-4">
               <div className="flex items-center gap-3">
@@ -339,7 +345,7 @@ export default function SnookerQueueSystem() {
                   <p className="text-sm text-gray-500">{selectedUser.skillLevel} player</p>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 bg-slate-50 rounded-lg">
                   <p className="text-sm text-gray-500">Current Streak</p>
@@ -350,9 +356,9 @@ export default function SnookerQueueSystem() {
                   <p className="text-2xl font-bold">{getMaxWinStreakForUser(selectedUser.id, "snooker")}</p>
                 </div>
               </div>
-              
+
               <Separator />
-              
+
               <div>
                 <h3 className="font-medium mb-3">Badges</h3>
                 <div className="grid grid-cols-3 gap-3">

@@ -276,6 +276,10 @@ interface StoreState {
   getMatchLogs: (stationId?: string, gameType?: GameType) => StoreState["matchLogs"]
   getEstimatedWaitTimeForGameType: (gameType: GameType) => number
   getNextQueuedPlayers: (gameType: GameType, count: number) => QueueEntry[]
+
+  // PS5 Dynamic Time Slots
+  getDynamicPS5TimeSlots: (date: string, duration?: number) => TimeSlot[]
+  refreshTimeSlots: (date: string) => void
 }
 
 // Create the store
@@ -313,6 +317,14 @@ export const useStore = create<StoreState>()(
       // Game station management state
       poolTableMode: "queue", // Default mode for pool tables
       matchLogs: [],
+
+      // Modal states
+      showSuccessModal: false,
+      lastReservation: null,
+
+      // Queue state
+      showQueueJoinModal: false,
+      queueNotifications: [],
 
       // Mock data
       stations: [
@@ -710,15 +722,6 @@ export const useStore = create<StoreState>()(
         },
       ],
 
-      showQueueJoinModal: false,
-      queueNotifications: [
-        {
-          id: "1",
-          message: "Your turn in the pool table queue is approaching. Please check in at the reception.",
-          read: false,
-        },
-      ],
-
       // Actions - Reservation
       setSelectedGameType: (gameType) => set({ selectedGameType: gameType }),
       setSelectedDate: (date) => set({ selectedDate: date }),
@@ -933,6 +936,18 @@ export const useStore = create<StoreState>()(
           isAdmin: false,
           status: "pending", // Set status to pending by default
           createdAt: new Date().toISOString(),
+          snookerWinStreak: 0,
+          snookerMaxWinStreak: 0,
+          poolWinStreak: 0,
+          poolMaxWinStreak: 0,
+          achievements: {
+            snookerStreak5: false,
+            snookerStreak10: false,
+            snookerStreak20: false,
+            poolStreak5: false,
+            poolStreak10: false,
+            poolStreak20: false,
+          },
         }
 
         set((state) => ({
@@ -1732,10 +1747,9 @@ export const useStore = create<StoreState>()(
 
         if (queues.length === 0) return 0
 
-        // Calculate based on historical match duration
-        const completedMatches = get().matches.filter(m =>
+        // Calculate based on historical match duration from match logs
+        const completedMatches = get().matchLogs.filter(m =>
           m.gameType === gameType &&
-          m.status === "completed" &&
           m.matchDuration
         )
 
@@ -1765,10 +1779,11 @@ export const useStore = create<StoreState>()(
           const sortedQueues = [...queues].sort((a, b) => a.position - b.position)
 
           // If there's a current match, add the remaining time
-          const currentMatch = get().matches.find(m =>
-            m.gameType === "snooker" &&
-            m.status === "in_progress"
-          )
+          // Check if snooker station is occupied
+          const snookerStation = stations.find(s => s.type === "snooker")
+          const currentMatch = snookerStation?.status === "occupied" ? {
+            createdAt: new Date().toISOString() // Approximate start time
+          } : null
 
           let remainingTime = 0
           if (currentMatch) {
@@ -1810,7 +1825,7 @@ export const useStore = create<StoreState>()(
             const startTime = new Date(currentReservation.date + "T" + currentReservation.timeSlot.start)
             const now = new Date()
             const elapsedMinutes = Math.round((now.getTime() - startTime.getTime()) / (1000 * 60))
-            const remainingTime = Math.max(0, currentReservation.duration - elapsedMinutes)
+            const remainingTime = Math.max(0, (currentReservation.duration || 30) - elapsedMinutes)
 
             return remainingTime
           }

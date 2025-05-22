@@ -24,7 +24,7 @@ export default function ConfirmationScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
 
-  const { selectedGameType, selectedDate, selectedTimeSlot, playerCount, name, email, phone, createReservation } =
+  const { selectedGameType, selectedDate, selectedTimeSlot, playerCount, name, email, phone, duration, createReservation } =
     useStore()
 
   const handleConfirm = () => {
